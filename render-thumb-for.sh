@@ -36,9 +36,9 @@ imgfile_whget () {
     imgfilepath=$1
 
     if [ "$is_cmd_exiftool" -ge 1 ]; then
-        img_wh=$(exiftool -p '$ImageWidth $ImageHeight' "$imgfilepath")
+        img_wh=$(exiftool -p "$ImageWidth $ImageHeight" "$imgfilepath")
     elif [ "$is_cmd_identify" -ge 1 ]; then
-        img_wh=$(identify -format '%w %h' $imgfilepath)
+        img_wh=$(identify -format "%w %h" $imgfilepath)
     else
         echo "'exiftool' or 'identify' commands not found"
     fi
@@ -48,7 +48,7 @@ imgfile_whget () {
 
 go_test () {
     imgfile_path=$1
-    imgfile_wh=$(imgfile_whget $imgfile_path)
+    imgfile_wh="$(imgfile_whget $imgfile_path)"
     max_wh="$2 $3"
 
     IFS=" " read -r -a fin_wh <<< "$(scaled_wh $imgfile_wh $max_wh)"
