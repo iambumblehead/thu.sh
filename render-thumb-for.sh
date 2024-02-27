@@ -49,10 +49,10 @@ imgfile_whget () {
 
 go_test () {
     imgfile_path=$1
-    imgfile_wh="$(imgfile_whget $imgfile_path)"
+    imgfile_wh=$(imgfile_whget "$imgfile_path")
     max_wh="$2 $3"
 
-    IFS=" " read -r -a fin_wh <<< "$(scaled_wh $imgfile_wh $max_wh)"
+    IFS=" " read -r -a fin_wh <<< $(scaled_wh $imgfile_wh $max_wh)
     fin_w=${fin_wh[0]}
     fin_h=${fin_wh[1]}
 
