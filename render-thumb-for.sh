@@ -19,7 +19,9 @@ scaled_wh () {
 
 #scaled="$(scaled_wh 640 1280 200 201)"
 #fin_wh=($(scaled_wh 640 1280 200 201))
-fin_wh=($(scaled_wh 640 480 200 201))
+# fin_wh=($(scaled_wh 640 480 200 201))
+#mapfile -t fin_wh < <($(scaled_wh 640 480 200 201))
+IFS=" " read -r -a fin_wh <<< "$(scaled_wh 640 1280 200 201)"
 fin_w=${fin_wh[0]}
 fin_h=${fin_wh[1]}
 
