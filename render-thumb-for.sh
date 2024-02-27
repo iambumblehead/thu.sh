@@ -36,9 +36,9 @@ imgfile_whget () {
     imgfilepath=$1
 
     if [ "$is_cmd_exiftool" -ge 1 ]; then # shellcheck disable=SC2016
-        img_wh=$(exiftool -p '$ImageWidth $ImageHeight' "$imgfilepath")
+        img_wh="$(exiftool -p '$ImageWidth $ImageHeight' $imgfilepath)"
     elif [ "$is_cmd_identify" -ge 1 ]; then
-        img_wh=$(identify -format "%w %h" $imgfilepath)
+        img_wh="$(identify -format "%w %h" $imgfilepath)"
     else
         echo "'exiftool' or 'identify' commands not found"
     fi
