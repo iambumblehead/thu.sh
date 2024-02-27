@@ -16,7 +16,7 @@ scaled_wh () {
     max_w=$3
     max_h=$4
 
-    if [ $max_w -gt $bgn_w ] && [ $max_h -gt $bgn_h ]; then
+    if [ "$max_w" -gt "$bgn_w" ] && [ "$max_h" -gt "$bgn_h" ]; then
         echo "$bgn_w $bgn_h"
         return 1
     fi
