@@ -10,6 +10,11 @@ if command -v identify &> /dev/null; then
     is_cmd_identify=1
 fi
 
+img_dir="$HOME/.config/render-thumb-for"
+if [ -n "${XDG_CONFIG_HOME}" ]; then
+  img_dir="$XDG_CONFIG_HOME/.config/render-thumb-for"
+fi
+
 scaled_wh () {
     bgn_w=$1
     bgn_h=$2
@@ -47,7 +52,20 @@ imgfile_whget () {
     echo "$img_wh"
 }
 
-go_test () {
+show_img_paint () {
+    export MAGICK_OCL_DEVICE=true
+    # exec convert or convert?
+
+    convert \
+        -channel rgba \
+        -background "rgba(0,0,0,0)" \
+        -geometry "${2}x${3}" \
+        "$1" sixel:-
+
+    echo ""
+}
+
+show_img () {
     imgfile_path=$1
     imgfile_wh=$(imgfile_whget "$imgfile_path")
     max_wh="$2 $3"
@@ -57,11 +75,25 @@ go_test () {
     fin_w=${fin_wh[0]}
     fin_h=${fin_wh[1]}
 
-    echo "--width=$fin_w --height=$fin_h $imgfile_path"
-    export MAGICK_OCL_DEVICE=true
-    # exec convert or convert?
-    convert "$imgfile_path" -geometry "${fin_w}x${fin_h}" sixel:-
-    echo ""
+    show_img_paint "$imgfile_path" "${fin_w}" "${fin_h}"
 }
 
-go_test "/home/bumble/software/Guix_logo.png" 400 400
+start () {
+    img_path="$1"
+    img_mimetype=$(file -b --mime-type "$img_path")
+    max_w="$2"
+    max_h="$3"
+
+    if [ ! -d "${img_dir}" ]; then
+        mkdir -p "${img_dir}"
+    fi
+
+    # font, pdf, video, audio, epub
+    if [[ $img_mimetype =~ ^"image/svg" ]]; then
+        show_img_paint "$img_path" "${max_w}" "${max_h}"
+    elif [[ $img_mimetype =~ ^"image/" ]]; then
+        show_img "$img_path" "$max_w" "$max_h"
+    fi
+}
+
+start "/home/bumble/software/Guix_logo.svg" 800 400
