@@ -12,7 +12,7 @@ fi
 
 img_dir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
-  img_dir="$XDG_CONFIG_HOME/.config/render-thumb-for"
+  img_dir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
 
 scaled_wh () {
