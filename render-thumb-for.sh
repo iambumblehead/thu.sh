@@ -101,6 +101,7 @@ show_video () {
         -update true \
         -f image2 \
         -loglevel error \
+        -hide_banner \
         screenshot_%06d.png
     # ffmpeg -i input.mp4 -s 640x480 %04d.jpg
 }
@@ -128,4 +129,4 @@ start () {
 }
 
 #start "/home/bumble/software/Guix_logo.svg" 800 400
-start "/home/bumble/ビデオ/#338 - video.mp4" 800 400
+start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
