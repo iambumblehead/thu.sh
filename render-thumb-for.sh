@@ -78,12 +78,41 @@ show_img () {
     show_img_paint "$imgfile_path" "${fin_w}" "${fin_h}"
 }
 
+show_video () {
+    imgfile_path=$1
+    # imgfile_wh=$(imgfile_whget "$imgfile_path")
+    max_wh="$2 $3"
+
+    # extract single frame
+    #ffmpeg -ss 00:00:04 -i input.mp4 -frames:v 1 screenshot.png
+
+    # resize frame
+    # ffmpeg -i input.mp4 -s 640x480 %04d.jpg
+
+    # scaling frame
+    # ffmpeg -i input.mp4 -vf scale=640:-1 %04d.png
+
+    ffmpeg \
+        -ss 00:00:04 \
+        -i "$imgfile_path" \
+        -frames:v 1 \
+        -s 640x480 \
+        -pattern_type none \
+        -update true \
+        -f image2 \
+        -loglevel error \
+        screenshot_%06d.png
+    # ffmpeg -i input.mp4 -s 640x480 %04d.jpg
+}
+
 start () {
     img_path="$1"
     img_mimetype=$(file -b --mime-type "$img_path")
     max_w="$2"
     max_h="$3"
 
+    echo $img_mimetype
+    
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
     fi
@@ -93,7 +122,10 @@ start () {
         show_img_paint "$img_path" "${max_w}" "${max_h}"
     elif [[ $img_mimetype =~ ^"image/" ]]; then
         show_img "$img_path" "$max_w" "$max_h"
+    elif [[ $img_mimetype =~ ^"video/" ]]; then
+        show_video "$img_path" "$max_w" "$max_h"
     fi
 }
 
-start "/home/bumble/software/Guix_logo.svg" 800 400
+#start "/home/bumble/software/Guix_logo.svg" 800 400
+start "/home/bumble/ビデオ/#338 - video.mp4" 800 400
