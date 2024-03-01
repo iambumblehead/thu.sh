@@ -15,6 +15,21 @@ if [ -n "${XDG_CONFIG_HOME}" ]; then
   img_dir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
 
+# Returns duration (in seconds) of a video $1 (uses ffmpeg).
+video_duration_get () {
+  OUTPUT=$(ffmpeg -i "$1" -vframes 1 -f rawvideo -y /dev/null 2>&1) ||
+    { debug -e "get_video_duration: error running ffmpeg:\n$OUTPUT"; return 1; }
+  DURATION=$(echo "$OUTPUT" | grep -m1 "^[[:space:]]*Duration:" |
+    cut -d":" -f2- | cut -d"," -f1 | sed "s/[:\.]/ /g") ||
+    { debug -e "get_video_duration: error parsing duration:\n$OUTPUT"; return 1; }
+  read HOURS MINUTES SECONDS DECISECONDS <<< "$DURATION"
+  echo $((10#$HOURS * 3600 + 10#$MINUTES * 60 + 10#$SECONDS))
+}
+
+video_wh_get () {
+    echo $(ffmpeg -i "$1" 2>&1 | grep Video: | grep -Po '\d{3,5}x\d{3,5}' | sed -r 's/x/ /')
+}
+
 scaled_wh () {
     bgn_w=$1
     bgn_h=$2
@@ -79,10 +94,21 @@ show_img () {
 }
 
 show_video () {
-    imgfile_path=$1
+    file_video_path=$1
     # imgfile_wh=$(imgfile_whget "$imgfile_path")
+    file_video_duration_ss=$(video_duration_get "$1")
+    file_video_frame_ss=$(($file_video_duration_ss / 5))
+    file_video_wh=$(video_wh_get "$1")
+    #file_video_frame_wh="no"
     max_wh="$2 $3"
 
+
+    IFS=" " read -r -a fin_wh <<< $(scaled_wh $file_video_wh $max_wh)
+    fin_w=${fin_wh[0]}
+    fin_h=${fin_wh[1]}
+    file_video_frame_wh="${fin_w}x${fin_h}"
+
+    echo "video $file_video_duration_ss $file_video_frame_ss $file_video_wh $file_video_frame_wh"
     # extract single frame
     #ffmpeg -ss 00:00:04 -i input.mp4 -frames:v 1 screenshot.png
 
@@ -91,18 +117,20 @@ show_video () {
 
     # scaling frame
     # ffmpeg -i input.mp4 -vf scale=640:-1 %04d.png
-
+    #
     ffmpeg \
-        -ss 00:00:04 \
-        -i "$imgfile_path" \
+        -ss "$file_video_frame_ss" \
+        -i "$file_video_path" \
         -frames:v 1 \
-        -s 640x480 \
+        -s "$file_video_frame_wh" \
         -pattern_type none \
         -update true \
         -f image2 \
         -loglevel error \
         -hide_banner \
-        screenshot_%06d.png
+        -y screenshot.png
+
+    show_img_paint "screenshot.png" "${fin_w}" "${fin_h}"
     # ffmpeg -i input.mp4 -s 640x480 %04d.jpg
 }
 
