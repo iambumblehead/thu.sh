@@ -19,10 +19,18 @@ fi
 video_duration_get () {
   OUTPUT=$(ffmpeg -i "$1" -vframes 1 -f rawvideo -y /dev/null 2>&1) ||
     { debug -e "get_video_duration: error running ffmpeg:\n$OUTPUT"; return 1; }
+
+  # output includes duration formatted hours:minutes:seconds:deciseconds,
+  # ```
+  # Duration: 00:58:54.59, start: 0.000000, bitrate: 3833 kb/s
+  # ```
   DURATION=$(echo "$OUTPUT" | grep -m1 "^[[:space:]]*Duration:" |
     cut -d":" -f2- | cut -d"," -f1 | sed "s/[:\.]/ /g") ||
     { debug -e "get_video_duration: error parsing duration:\n$OUTPUT"; return 1; }
-  read HOURS MINUTES SECONDS DECISECONDS <<< "$DURATION"
+
+  # remove deciseconds with ::-3
+  IFS=" " read -r HOURS MINUTES SECONDS <<< "${DURATION::-3}"
+
   echo $((10#$HOURS * 3600 + 10#$MINUTES * 60 + 10#$SECONDS))
 }
 
@@ -97,6 +105,7 @@ show_video () {
     file_video_path=$1
     # imgfile_wh=$(imgfile_whget "$imgfile_path")
     file_video_duration_ss=$(video_duration_get "$1")
+    echo "duration $file_video_duration_ss"
     file_video_frame_ss=$(($file_video_duration_ss / 5))
     file_video_wh=$(video_wh_get "$1")
     #file_video_frame_wh="no"
@@ -158,3 +167,5 @@ start () {
 
 #start "/home/bumble/software/Guix_logo.svg" 800 400
 start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
+
+# ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
