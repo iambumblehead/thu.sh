@@ -35,7 +35,7 @@ video_duration_get () {
 }
 
 video_wh_get () {
-    echo $(ffmpeg -i "$1" 2>&1 | grep Video: | grep -Po '\d{3,5}x\d{3,5}' | sed -r 's/x/ /')
+    echo "$(ffmpeg -i "$1" 2>&1 | grep Video: | grep -Po '\d{3,5}x\d{3,5}' | sed -r 's/x/ /')"
 }
 
 scaled_wh () {
@@ -112,7 +112,7 @@ show_video () {
     max_wh="$2 $3"
 
 
-    IFS=" " read -r -a fin_wh <<< $(scaled_wh $file_video_wh $max_wh)
+    IFS=" " read -r -a fin_wh <<< "$(scaled_wh $file_video_wh $max_wh)"
     fin_w=${fin_wh[0]}
     fin_h=${fin_wh[1]}
     file_video_frame_wh="${fin_w}x${fin_h}"
