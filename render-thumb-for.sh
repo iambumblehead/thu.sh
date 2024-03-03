@@ -9,30 +9,38 @@ if [ -n "${XDG_CONFIG_HOME}" ]; then
   img_dir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
 
-# Returns duration (in seconds) of a video $1 (uses ffmpeg).
-video_duration_get () {
-  OUTPUT=$(ffmpeg -i "$1" -vframes 1 -f rawvideo -y /dev/null 2>&1) ||
-    { debug -e "get_video_duration: error running ffmpeg:\n$OUTPUT"; return 1; }
+ffmpeg_parse_video_duration_ss () {
+    duration_regex="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
+    duration_match=""
+    
+    while IFS=$'\n' read -r line; do
+        if [[ $line == *" Duration:"* && $line =~ $duration_regex ]]; then
+            duration_match="${BASH_REMATCH[1]}"
+            break
+        fi
+    done < <(printf '%s\n' "$1")
 
-  # output includes duration formatted hours:minutes:seconds:deciseconds,
-  # ```
-  # Duration: 00:58:54.59, start: 0.000000, bitrate: 3833 kb/s
-  # ```
-  DURATION=$(echo "$OUTPUT" | grep -m1 "^[[:space:]]*Duration:" |
-    cut -d":" -f2- | cut -d"," -f1 | sed "s/[:\.]/ /g") ||
-    { debug -e "get_video_duration: error parsing duration:\n$OUTPUT"; return 1; }
-
-  # remove deciseconds with ::-3
-  IFS=" " read -r HOURS MINUTES SECONDS <<< "${DURATION::-3}"
-
-  echo $((10#$HOURS * 3600 + 10#$MINUTES * 60 + 10#$SECONDS))
+    IFS=" " read -r HOURS MINUTES SECONDS <<< "${duration_match//:/ }"
+    
+    echo $((10#$HOURS * 3600 + 10#$MINUTES * 60 + 10#$SECONDS))
 }
 
-video_wh_get () {
-    ffmpeg -i "$1" 2>&1 | grep Video: | grep -Po '\d{3,5}x\d{3,5}' | sed -r 's/x/ /'
+# extracts resolution from ffmpeg output without grep
+ffmpeg_parse_video_resolution () {
+    resolution_regex="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
+    resolution_match=""
+
+    while IFS=$'\n' read -r line; do
+        if [[ $line == *"Video:"* && $line =~ $resolution_regex ]]; then
+            resolution_match="${BASH_REMATCH[1]}"
+            break
+        fi
+    done < <(printf '%s\n' "$1")
+
+    echo "${resolution_match/x/ }"
 }
 
-wh_scaled_get () {
+wh_scaled_get () {    
     IFS=" " read -r -a wh_bgn <<< "$1"
     IFS=" " read -r -a wh_max <<< "$2"
     w_bgn=${wh_bgn[0]}
@@ -40,7 +48,7 @@ wh_scaled_get () {
     h_bgn=${wh_bgn[1]}
     h_max=${wh_max[1]}
 
-    # if image is smaller
+    # if image is smaller, return native wh
     if [ "$w_max" -gt "$w_bgn" ] && [ "$h_max" -gt "$h_bgn" ]; then
         echo "$w_bgn $h_bgn"
         return 1
@@ -57,7 +65,7 @@ wh_scaled_get () {
     echo "$fin_w $fin_h"
 }
 
-imgfile_whget () {
+img_wh_get () {
     imgfilepath=$1
 
     if [[ -n "$is_cmd_exiftool" ]]; then # shellcheck disable=SC2016
@@ -86,27 +94,28 @@ show_img_paint () {
 }
 
 show_img () {
-    imgfile_path=$1
-    imgfile_wh_native=$(imgfile_whget "$imgfile_path")
-    imgfile_wh_max=$2
-    imgfile_wh_scaled=$(wh_scaled_get "$imgfile_wh_native" "$imgfile_wh_max")
+    img_path=$1
+    img_wh_max=$2
+    img_wh_native=$(img_wh_get "$img_path")
+    img_wh_scaled=$(wh_scaled_get "$img_wh_native" "$img_wh_max")
 
-    show_img_paint "$imgfile_path" "$imgfile_wh_scaled"
+    show_img_paint "$img_path" "$img_wh_scaled"
 }
 
 show_video () {
-    file_video_path=$1
-    file_video_duration_ss=$(video_duration_get "$1")
-    file_video_frame_ss=$(($file_video_duration_ss / 5))
-    file_video_wh_native=$(video_wh_get "$1")
-    file_video_wh_max=$2
-    file_video_wh_scaled=$(wh_scaled_get "$file_video_wh_native" "$file_video_wh_max")
+    vid_path=$1
+    vid_wh_max=$2
+    vid_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
+    vid_duration_ss=$(ffmpeg_parse_video_duration_ss "$vid_ffmpeg_output")
+    vid_wh_native=$(ffmpeg_parse_video_resolution "$vid_ffmpeg_output")
+    vid_wh_scaled=$(wh_scaled_get "$vid_wh_native" "$vid_wh_max")
+    vid_frame_ss=$(($vid_duration_ss / 5))
 
     ffmpeg \
-        -ss "$file_video_frame_ss" \
-        -i "$file_video_path" \
+        -ss "$vid_frame_ss" \
+        -i "$vid_path" \
         -frames:v 1 \
-        -s "${file_video_wh_scaled/ /x}" \
+        -s "${vid_wh_scaled/ /x}" \
         -pattern_type none \
         -update true \
         -f image2 \
@@ -114,13 +123,14 @@ show_video () {
         -hide_banner \
         -y screenshot.png
 
-    show_img_paint "screenshot.png" "$file_video_wh_scaled"
+    show_img_paint "screenshot.png" "$vid_wh_scaled"
 }
 
 start () {
-    img_path="$1"
-    img_mimetype=$(file -b --mime-type "$img_path")
+    img_path=$1
     max_wh="$2 $3"
+    img_mimetype=$(file -b --mime-type "$img_path")
+
 
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
@@ -137,7 +147,7 @@ start () {
 }
 
 start "/home/bumble/software/Guix_logo.png" 800 400
-#start "/home/bumble/software/Guix_logo.svg" 800 800
-#start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
+start "/home/bumble/software/Guix_logo.svg" 800 800
+start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
 echo "$is_cmd_ffmpeg"
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
