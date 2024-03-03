@@ -1,5 +1,7 @@
 # changelog
 
+ * 0.0.3 _Mar.03.2024_
+   * added pdf thumb generation [#4](https://github.com/iambumblehead/render-thumb-for.sh/pull/4)
  * 0.0.2 _Mar.02.2024_
    * added video thumb generation [#2](https://github.com/iambumblehead/render-thumb-for.sh/pull/2)
    * added audio thumb generation [#3](https://github.com/iambumblehead/render-thumb-for.sh/pull/3)
