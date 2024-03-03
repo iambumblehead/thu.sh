@@ -33,8 +33,8 @@ video_wh_get () {
 }
 
 wh_scaled_get () {
-    IFS=" " read -r -a wh_bgn <<< $1
-    IFS=" " read -r -a wh_max <<< $2
+    IFS=" " read -r -a wh_bgn <<< "$1"
+    IFS=" " read -r -a wh_max <<< "$2"
     w_bgn=${wh_bgn[0]}
     w_max=${wh_max[0]}
     h_bgn=${wh_bgn[1]}
@@ -57,7 +57,6 @@ wh_scaled_get () {
     echo "$fin_w $fin_h"
 }
 
-# shellcheck disable=2086
 imgfile_whget () {
     imgfilepath=$1
 
