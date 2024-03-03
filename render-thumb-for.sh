@@ -13,7 +13,7 @@ mime_img_re="image/"
 mime_audio_re="audio/"
 mime_pdf_re="application/pdf"
 
-default_wh="640 480"
+#default_wh="640 480"
 
 img_dir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
