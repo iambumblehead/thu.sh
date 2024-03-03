@@ -10,6 +10,7 @@ resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 mime_video_re="video/"
 mime_svg_re="image/svg"
 mime_img_re="image/"
+mime_audio_re="audio/"
 
 img_dir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
@@ -136,11 +137,32 @@ show_video () {
     img_sixel_paint "screenshot.png" "$vid_wh_scaled"
 }
 
+show_audio () {
+    aud_path=$1
+    aud_wh_max=$2
+    aud_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
+    aud_wh_native=$(video_resolution_ffmpeg_parse "$aud_ffmpeg_output")
+    aud_wh_scaled=$(wh_scaled_get "$aud_wh_native" "$aud_wh_max")
+
+    ffmpeg \
+        -ss "00:00:00" \
+        -i "$aud_path" \
+        -frames:v 1 \
+        -s "${aud_wh_scaled/ /x}" \
+        -pattern_type none \
+        -update true \
+        -f image2 \
+        -loglevel error \
+        -hide_banner \
+        -y audioshot.png
+
+    img_sixel_paint "audioshot.png" "$aud_wh_scaled"
+}
+
 start () {
     img_path=$1
     max_wh="$2 $3"
     img_mimetype=$(file -b --mime-type "$img_path")
-
 
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
@@ -153,11 +175,14 @@ start () {
         img_sixel_paint_downscale "$img_path" "$max_wh"
     elif [[ $img_mimetype =~ ^$mime_video_re ]]; then
         show_video "$img_path" "$max_wh"
+    elif [[ $img_mimetype =~ ^$mime_audio_re ]]; then
+        show_audio "$img_path" "$max_wh"
     fi
 }
 
-start "/home/bumble/software/Guix_logo.png" 800 400
-start "/home/bumble/software/Guix_logo.svg" 800 800
-start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
+#start "/home/bumble/software/Guix_logo.png" 800 400
+#start "/home/bumble/software/Guix_logo.svg" 800 800
+#start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
+start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
 echo "$is_cmd_ffmpeg"
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
