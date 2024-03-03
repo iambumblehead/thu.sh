@@ -1,14 +1,8 @@
 #!/usr/bin/env bash
 
-is_cmd_exiftool=0
-if command -v exiftool &> /dev/null; then
-    is_cmd_exiftool=1
-fi
-
-is_cmd_identify=0
-if command -v identify &> /dev/null; then
-    is_cmd_identify=1
-fi
+is_cmd_exiftool=$(command -v exiftool)
+is_cmd_identify=$(command -v identify)
+is_cmd_ffmpeg=$(command -v ffmpeg)
 
 img_dir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
@@ -38,23 +32,26 @@ video_wh_get () {
     ffmpeg -i "$1" 2>&1 | grep Video: | grep -Po '\d{3,5}x\d{3,5}' | sed -r 's/x/ /'
 }
 
-scaled_wh () {
-    bgn_w=$1
-    bgn_h=$2
-    max_w=$3
-    max_h=$4
+wh_scaled_get () {
+    IFS=" " read -r -a wh_bgn <<< $1
+    IFS=" " read -r -a wh_max <<< $2
+    w_bgn=${wh_bgn[0]}
+    w_max=${wh_max[0]}
+    h_bgn=${wh_bgn[1]}
+    h_max=${wh_max[1]}
 
-    if [ "$max_w" -gt "$bgn_w" ] && [ "$max_h" -gt "$bgn_h" ]; then
-        echo "$bgn_w $bgn_h"
+    # if image is smaller
+    if [ "$w_max" -gt "$w_bgn" ] && [ "$h_max" -gt "$h_bgn" ]; then
+        echo "$w_bgn $h_bgn"
         return 1
     fi
 
     # multiply and divide by 100 to convert decimal and int
-    fin_h=$max_h
-    fin_w=$((($bgn_w * (($fin_h * 100) / $bgn_h)) / 100))
-    if [ "$fin_w" -ge "$max_w" ]; then
-        fin_w=$max_w
-        fin_h=$((($bgn_h * (($fin_w * 100) / $bgn_w)) / 100))
+    fin_h=$h_max
+    fin_w=$((($w_bgn * (($fin_h * 100) / $h_bgn)) / 100))
+    if [ "$fin_w" -ge "$w_max" ]; then
+        fin_w=$w_max
+        fin_h=$((($h_bgn * (($fin_w * 100) / $w_bgn)) / 100))
     fi
 
     echo "$fin_w $fin_h"
@@ -64,9 +61,9 @@ scaled_wh () {
 imgfile_whget () {
     imgfilepath=$1
 
-    if [ "$is_cmd_exiftool" -ge 1 ]; then # shellcheck disable=SC2016
+    if [[ -n "$is_cmd_exiftool" ]]; then # shellcheck disable=SC2016
         img_wh=$(exiftool -p '$ImageWidth $ImageHeight' "$imgfilepath")
-    elif [ "$is_cmd_identify" -ge 1 ]; then
+    elif [[ -n "$is_cmd_identify" ]]; then
         img_wh=$(identify -format "%w %h" $imgfilepath)
     else
         echo "'exiftool' or 'identify' commands not found"
@@ -76,62 +73,41 @@ imgfile_whget () {
 }
 
 show_img_paint () {
-    export MAGICK_OCL_DEVICE=true
-    # exec convert or convert?
+    img_path=$1
+    img_wh=$2
 
+    export MAGICK_OCL_DEVICE=true
     convert \
         -channel rgba \
         -background "rgba(0,0,0,0)" \
-        -geometry "${2}x${3}" \
-        "$1" sixel:-
+        -geometry "${img_wh/ /x}" \
+        "$img_path" sixel:-
 
     echo ""
 }
 
 show_img () {
     imgfile_path=$1
-    imgfile_wh=$(imgfile_whget "$imgfile_path")
-    max_wh="$2 $3"
+    imgfile_wh_native=$(imgfile_whget "$imgfile_path")
+    imgfile_wh_max=$2
+    imgfile_wh_scaled=$(wh_scaled_get "$imgfile_wh_native" "$imgfile_wh_max")
 
-    # shellcheck disable=2086,2046
-    IFS=" " read -r -a fin_wh <<< $(scaled_wh $imgfile_wh $max_wh)
-    fin_w=${fin_wh[0]}
-    fin_h=${fin_wh[1]}
-
-    show_img_paint "$imgfile_path" "${fin_w}" "${fin_h}"
+    show_img_paint "$imgfile_path" "$imgfile_wh_scaled"
 }
 
 show_video () {
     file_video_path=$1
-    # imgfile_wh=$(imgfile_whget "$imgfile_path")
     file_video_duration_ss=$(video_duration_get "$1")
-    echo "duration $file_video_duration_ss"
     file_video_frame_ss=$(($file_video_duration_ss / 5))
-    file_video_wh=$(video_wh_get "$1")
-    #file_video_frame_wh="no"
-    max_wh="$2 $3"
+    file_video_wh_native=$(video_wh_get "$1")
+    file_video_wh_max=$2
+    file_video_wh_scaled=$(wh_scaled_get "$file_video_wh_native" "$file_video_wh_max")
 
-
-    IFS=" " read -r -a fin_wh <<< "$(scaled_wh "$file_video_wh" "$max_wh")"
-    fin_w=${fin_wh[0]}
-    fin_h=${fin_wh[1]}
-    file_video_frame_wh="${fin_w}x${fin_h}"
-
-    echo "video $file_video_duration_ss $file_video_frame_ss $file_video_wh $file_video_frame_wh"
-    # extract single frame
-    #ffmpeg -ss 00:00:04 -i input.mp4 -frames:v 1 screenshot.png
-
-    # resize frame
-    # ffmpeg -i input.mp4 -s 640x480 %04d.jpg
-
-    # scaling frame
-    # ffmpeg -i input.mp4 -vf scale=640:-1 %04d.png
-    #
     ffmpeg \
         -ss "$file_video_frame_ss" \
         -i "$file_video_path" \
         -frames:v 1 \
-        -s "$file_video_frame_wh" \
+        -s "${file_video_wh_scaled/ /x}" \
         -pattern_type none \
         -update true \
         -f image2 \
@@ -139,33 +115,29 @@ show_video () {
         -hide_banner \
         -y screenshot.png
 
-    show_img_paint "screenshot.png" "${fin_w}" "${fin_h}"
-    # ffmpeg -i input.mp4 -s 640x480 %04d.jpg
+    show_img_paint "screenshot.png" "$file_video_wh_scaled"
 }
 
 start () {
     img_path="$1"
     img_mimetype=$(file -b --mime-type "$img_path")
-    max_w="$2"
-    max_h="$3"
+    max_wh="$2 $3"
 
-    # echo $img_mimetype
-    
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
     fi
 
     # font, pdf, video, audio, epub
     if [[ $img_mimetype =~ ^"image/svg" ]]; then
-        show_img_paint "$img_path" "${max_w}" "${max_h}"
+        show_img_paint "$img_path" "$max_wh"
     elif [[ $img_mimetype =~ ^"image/" ]]; then
-        show_img "$img_path" "$max_w" "$max_h"
+        show_img "$img_path" "$max_wh"
     elif [[ $img_mimetype =~ ^"video/" ]]; then
-        show_video "$img_path" "$max_w" "$max_h"
+        show_video "$img_path" "$max_wh"
     fi
 }
 
-#start "/home/bumble/software/Guix_logo.svg" 800 400
+start "/home/bumble/software/Guix_logo.png" 800 400
+start "/home/bumble/software/Guix_logo.svg" 800 800
 start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
-
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
