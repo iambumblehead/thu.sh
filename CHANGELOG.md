@@ -8,3 +8,6 @@
    * added .gitattributes to one day filter demo images included at git release
    * experimented w/ libsixel `img2sixel` and imagemagick `covert`, decided on `convert`
    * investigated thumbnail generation for other file types
+ * 0.0.2 _Feb.29.2024_
+   * added video thumb generation
+   * added functions return video length, dimensions using ffmpeg
