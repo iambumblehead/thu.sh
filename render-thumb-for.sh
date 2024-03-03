@@ -63,7 +63,7 @@ imgfile_whget () {
     if [[ -n "$is_cmd_exiftool" ]]; then # shellcheck disable=SC2016
         img_wh=$(exiftool -p '$ImageWidth $ImageHeight' "$imgfilepath")
     elif [[ -n "$is_cmd_identify" ]]; then
-        img_wh=$(identify -format "%w %h" $imgfilepath)
+        img_wh=$(identify -format "%w %h" "$imgfilepath")
     else
         echo "'exiftool' or 'identify' commands not found"
     fi
@@ -137,6 +137,7 @@ start () {
 }
 
 start "/home/bumble/software/Guix_logo.png" 800 400
-start "/home/bumble/software/Guix_logo.svg" 800 800
-start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
+#start "/home/bumble/software/Guix_logo.svg" 800 800
+#start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
+echo "$is_cmd_ffmpeg"
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
