@@ -219,7 +219,6 @@ show_font () {
              "!@$\%(){}[]")
     font_preview_multiline=${font_preview_text// /\\n}
 
-    echo $font_pointsize
     if [[ -z "$is_cmd_convert" ]]; then
         echo "'convert' command not found (imagemagick)";
         exit 1
