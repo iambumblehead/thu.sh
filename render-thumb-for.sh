@@ -5,16 +5,15 @@ is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
 
+mimeTypeSVG="svg"
+mimeTypeIMAGE="imgage"
+mimeTypeVIDEO="video"
+mimeTypeAUDIO="audio"
+mimeTypeAUDIO="pdf"
+mimeTypeFONT="font"
+
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
 resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
-
-mime_video_re="video/"
-mime_svg_re="image/svg"
-mime_img_re="image/"
-mime_audio_re="audio/"
-mime_pdf_re="application/pdf"
-mime_font_re="(ttf|truetype|opentype|woff|woff2|sfnt)$"
-
 
 #default_wh="640 480"
 
@@ -22,6 +21,27 @@ img_dir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
   img_dir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
+
+file_type_get () {
+    mime=$(file -b --mime-type "$1")
+
+    # font, pdf, video, audio, epub
+    if [[ $mime =~ ^"image/svg" ]]; then
+        echo "$mimeTypeSVG"
+    elif [[ $mime =~ ^"image/" ]]; then
+        echo "$mimeTypeIMAGE"
+    elif [[ $mime =~ ^"video/" ]]; then
+        echo "$mimeTypeVIDEO"
+    elif [[ $mime =~ ^"audio/" ]]; then
+        echo "$mimeTypeAUDIO"
+    elif [[ $mime =~ ^"application/pdf" ]]; then
+        echo "$mimeTypePDF"
+    elif [[ $mime =~ "(ttf|truetype|opentype|woff|woff2|sfnt)$" ]]; then
+        echo "$mimeTypeFONT"
+    else
+        echo "unsupported"
+    fi
+}
 
 wh_max_get () {
     IFS=" " read -r -a wh <<< "$1"
@@ -238,28 +258,34 @@ show_font () {
 }
 
 start () {
-    img_path=$1
+    path=$1
     max_wh="$2 $3"
-    img_mimetype=$(file -b --mime-type "$img_path")
 
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
     fi
 
-    # font, pdf, video, audio, epub
-    if [[ $img_mimetype =~ ^$mime_svg_re ]]; then
-        img_sixel_paint "$img_path" "$max_wh"
-    elif [[ $img_mimetype =~ ^$mime_img_re ]]; then
-        img_sixel_paint_downscale "$img_path" "$max_wh"
-    elif [[ $img_mimetype =~ ^$mime_video_re ]]; then
-        show_video "$img_path" "$max_wh"
-    elif [[ $img_mimetype =~ ^$mime_audio_re ]]; then
-        show_audio "$img_path" "$max_wh"
-    elif [[ $img_mimetype =~ ^$mime_pdf_re ]]; then
-        show_pdf "$img_path" "$max_wh"
-    elif [[ $img_mimetype =~ $mime_font_re ]]; then
-        show_font "$img_path" "$max_wh"
-    fi
+    case $(file_type_get "$path") in
+        "$mimeTypeSVG")
+            img_sixel_paint "$path" "$max_wh"
+	    ;;
+        "$mimeTypeIMAGE")
+            img_sixel_paint_downscale "$path" "$max_wh"
+	    ;;
+        "$mimeTypeVIDEO")
+            show_video "$path" "$max_wh"
+            ;;
+        "$mimeTypeAUDIO")
+            show_audio "$path" "$max_wh"
+            ;;
+        "$mimeTypePDF")
+            show_pdf "$path" "$max_wh"
+            ;;
+        "$mimeTypeFONT")
+            show_font "$path" "$max_wh"
+            ;;
+        *)
+    esac
 }
 
 #start "/home/bumble/software/Guix_logo.png" 800 400
