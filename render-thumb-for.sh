@@ -36,7 +36,7 @@ file_type_get () {
         echo "$mimeTypeAUDIO"
     elif [[ $mime =~ ^"application/pdf" ]]; then
         echo "$mimeTypePDF"
-    elif [[ $mime =~ "(ttf|truetype|opentype|woff|woff2|sfnt)$" ]]; then
+    elif [[ $mime =~ (ttf|truetype|opentype|woff|woff2|sfnt)$ ]]; then
         echo "$mimeTypeFONT"
     else
         echo "unsupported"
