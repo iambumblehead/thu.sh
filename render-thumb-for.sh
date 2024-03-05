@@ -10,6 +10,7 @@ mimeTypeIMAGE="imgage"
 mimeTypeVIDEO="video"
 mimeTypeAUDIO="audio"
 mimeTypeFONT="font"
+mimeTypeEPUB="epub"
 mimeTypePDF="pdf"
 
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
@@ -38,6 +39,8 @@ file_type_get () {
         echo "$mimeTypePDF"
     elif [[ $mime =~ (ttf|truetype|opentype|woff|woff2|sfnt)$ ]]; then
         echo "$mimeTypeFONT"
+    elif [[ $mime =~ ^"application/epub" ]]; then
+        echo "$mimeTypeEPUB"
     else
         echo "unsupported"
     fi
@@ -152,6 +155,37 @@ img_sixel_paint_downscale () {
     img_wh_scaled=$(wh_scaled_get "$img_wh_native" "$img_wh_max")
 
     img_sixel_paint "$img_path" "$img_wh_scaled"
+}
+
+epub_rootfile_get () {
+    root_file=$(zip -p "$1" "META-INF/container.xml")
+
+    echo "$1"
+    echo "$root_file"
+    # def _get_rootfile_root(epub):
+    # open the main container
+    # container = epub.open("META-INF/container.xml")
+    # container_root = minidom.parseString(container.read())
+
+    # locate the rootfile
+    # elem = container_root.getElementsByTagName("rootfile")[0]
+    # rootfile_path = elem.getAttribute("full-path")
+
+    # open the rootfile
+    # rootfile = epub.open(rootfile_path)
+    # return rootfile_path, minidom.parseString(rootfile.read())
+}
+
+# extract single file from zip
+# https://superuser.com/questions/600385/remove-single-file-from-zip-archive-on-linux
+show_epub () {
+    epub_path=$1
+    epub_wh_max=$2
+    epub_ls=$(unzip -l "$1")
+
+    epub_rootfile_get "$1"
+    # https://github.com/marianosimone/epub-thumbnailer/blob/master/src/epub-thumbnailer.py
+    # echo "show $epub_ls"
 }
 
 show_video () {
@@ -278,6 +312,9 @@ start () {
         "$mimeTypeAUDIO")
             show_audio "$path" "$max_wh"
             ;;
+        "$mimeTypeEPUB")
+            show_epub "$path" "$max_wh"
+            ;;            
         "$mimeTypePDF")
             show_pdf "$path" "$max_wh"
             ;;
@@ -293,6 +330,7 @@ start () {
 #start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
 #start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
-#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
-start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
+#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).epub" 800 400
+start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub" 800 400
+#start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
