@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+is_cmd_convert=$(command -v convert)
 is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
@@ -12,6 +13,8 @@ mime_svg_re="image/svg"
 mime_img_re="image/"
 mime_audio_re="audio/"
 mime_pdf_re="application/pdf"
+mime_font_re="(ttf|truetype|opentype|woff|woff2|sfnt)$"
+
 
 #default_wh="640 480"
 
@@ -24,6 +27,15 @@ wh_max_get () {
     IFS=" " read -r -a wh <<< "$1"
 
     echo "$((${wh[0]} > ${wh[1]} ? ${wh[0]} : ${wh[1]}))"
+}
+
+wh_pointsize_get () {
+    IFS=" " read -r -a wh <<< "$1"
+
+    min=$((${wh[0]} > ${wh[1]} ? ${wh[1]} : ${wh[0]}))
+    mul=$((${wh[0]} > ${wh[1]} ? 8 : 10))
+
+    echo "$(($min / $mul))"
 }
 
 wh_scaled_get () {
@@ -131,6 +143,11 @@ show_video () {
     vid_wh_scaled=$(wh_scaled_get "$vid_wh_native" "$vid_wh_max")
     vid_frame_ss=$(($vid_duration_ss / 5))
 
+    if [[ -z "$is_cmd_ffmpeg" ]]; then
+        echo "'exiftool' or 'identify' commands not found";
+        exit 1
+    fi
+
     ffmpeg \
         -ss "$vid_frame_ss" \
         -i "$vid_path" \
@@ -152,6 +169,11 @@ show_audio () {
     aud_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
     aud_wh_native=$(video_resolution_ffmpeg_parse "$aud_ffmpeg_output")
     aud_wh_scaled=$(wh_scaled_get "$aud_wh_native" "$aud_wh_max")
+
+    if [[ -z "$is_cmd_ffmpeg" ]]; then
+        echo "'exiftool' or 'identify' commands not found";
+        exit 1
+    fi
 
     ffmpeg \
         -ss "00:00:00" \
@@ -181,6 +203,40 @@ show_pdf () {
     img_sixel_paint "pdfhot.jpg" "$pdf_wh_max"
 }
 
+# shellcheck disable=SC2116
+show_font () {
+    font_path=$1
+    font_wh_max=$2
+    font_pointsize="$(wh_pointsize_get "$2")"
+    font_bg_color="rgba(0,0,0,1)"
+    font_fg_color="rgba(240,240,240,1)"
+    font_preview_text=$(
+        echo "ABCDEFGHIJKLM" \
+             "NOPQRSTUVWXYZ" \
+             "abcdefghijklm" \
+             "nopqrstuvwxyz" \
+             "1234567890" \
+             "!@$\%(){}[]")
+    font_preview_multiline=${font_preview_text// /\\n}
+
+    if [[ -z "$is_cmd_convert" ]]; then
+        echo "'convert' command not found (imagemagick)";
+        exit 1
+    fi
+
+   convert \
+       -size "${font_wh_max/ /x}" \
+       -background "$font_bg_color" \
+       -fill "$font_fg_color" \
+       -font "$font_path" \
+       -pointsize "$font_pointsize" \
+       -gravity Center \
+       "label:${font_preview_multiline}" \
+       fontout.jpg
+
+    img_sixel_paint "fontout.jpg" "$font_wh_max"
+}
+
 start () {
     img_path=$1
     max_wh="$2 $3"
@@ -201,6 +257,8 @@ start () {
         show_audio "$img_path" "$max_wh"
     elif [[ $img_mimetype =~ ^$mime_pdf_re ]]; then
         show_pdf "$img_path" "$max_wh"
+    elif [[ $img_mimetype =~ $mime_font_re ]]; then
+        show_font "$img_path" "$max_wh"
     fi
 }
 
@@ -208,6 +266,7 @@ start () {
 #start "/home/bumble/software/Guix_logo.svg" 800 800
 #start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
 #start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
-start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
-echo "$is_cmd_ffmpeg"
+#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
+#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
+start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
