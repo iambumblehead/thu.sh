@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-is_cmd_fontpreview=$(command -v fontpreview)
 is_cmd_convert=$(command -v convert)
 is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
@@ -28,6 +27,15 @@ wh_max_get () {
     IFS=" " read -r -a wh <<< "$1"
 
     echo "$((${wh[0]} > ${wh[1]} ? ${wh[0]} : ${wh[1]}))"
+}
+
+wh_pointsize_get () {
+    IFS=" " read -r -a wh <<< "$1"
+
+    min=$((${wh[0]} > ${wh[1]} ? ${wh[1]} : ${wh[0]}))
+    mul=$((${wh[0]} > ${wh[1]} ? 8 : 10))
+
+    echo "$(($min / $mul))"
 }
 
 wh_scaled_get () {
@@ -198,8 +206,8 @@ show_pdf () {
 show_font () {
     font_path=$1
     font_wh_max=$2
+    font_pointsize="$(wh_pointsize_get "$2")"
     font_position="+0+0"
-    font_size=38
     font_bg_color="rgba(0,0,0,1)"
     font_fg_color="rgba(240,240,240,1)"
     font_preview_text=$(
@@ -211,48 +219,23 @@ show_font () {
              "!@$\%(){}[]")
     font_preview_multiline=${font_preview_text// /\\n}
 
-    printf "$font_preview_multiline"
-
+    echo $font_pointsize
     if [[ -z "$is_cmd_convert" ]]; then
         echo "'convert' command not found (imagemagick)";
         exit 1
     fi
 
-    # -annotate+0 "$font_preview_text" \
-        # Credits: https://bit.ly/2UvLVhM
-    # https://dev.to/danburzo/how-to-make-png-font-samples-with-imagemagick-part-1-29p8
-    #magick identify -verbose "$font_path"
+   convert \
+       -size "${font_wh_max/ /x}" \
+       -background "$font_bg_color" \
+       -fill "$font_fg_color" \
+       -font "$font_path" \
+       -pointsize "$font_pointsize" \
+       -gravity Center \
+       "label:${font_preview_multiline}" \
+       fontout.jpg
 
-#    magick \
-#        -size 300x \
-#        -background lightblue -fill blue \
-#        -font Cantarell -pointsize 72 label:Anthony \
-#        label.gif
-
-#    magick \
-#        -debug all \
-#        -size "800x480" \
-#        canvas:none \
-#        -font "$font_path" \
-#        -pointsize 48 \
-#        -gravity Center \
-#        -draw "text 0,0 'The five boxing wizards jump quickly.'" \
-#        -trim \
-#        +repage \
-#        canvas:none MyFont-sample.png
-
-#    convert \
-#        -debug all \
-#        -size "400x400" \
-#        -background "rgba(0,0,0,0)" \
-#        -gravity center \
-#        -pointsize "$font_size" \
-#        -font "$font_path" \
-#        -fill "$font_fg_color" \
-#        -annotate +0+0 "$font_preview_text" \
-#        -flatten "fontout.jpg[0]"
-
-#    img_sixel_paint "fontout.jpg" "$pdf_wh_max"
+    img_sixel_paint "fontout.jpg" "$font_wh_max"
 }
 
 start () {
@@ -286,5 +269,5 @@ start () {
 #start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
-start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 800 400
+start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
