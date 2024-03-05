@@ -203,11 +203,11 @@ show_pdf () {
     img_sixel_paint "pdfhot.jpg" "$pdf_wh_max"
 }
 
+# shellcheck disable=SC2116
 show_font () {
     font_path=$1
     font_wh_max=$2
     font_pointsize="$(wh_pointsize_get "$2")"
-    font_position="+0+0"
     font_bg_color="rgba(0,0,0,1)"
     font_fg_color="rgba(240,240,240,1)"
     font_preview_text=$(
