@@ -26,7 +26,9 @@ render-thumb-for.sh /path/to/book.epub
   <dt>What dependencies are needed?</dt>
   <dd>`imagemagick`, `ffmpeg` (video, audio), `unzip` (epub), `pdftoppm` (pdf) and `exiftool` is optionally used when the command is available, else system `identity` command is used.</dd>
   <dt>What is the benefit of `render-thumb-for.sh` compared to `lsix` or `vifmimg`?</dt>
-  <dd>`lsix` does not by itself provide out-of-box behaviour needed for a filemanager. It does not render video, audio or epub and will not manage a file cache. `vifmimg` requires a bigger dependency tree including a python runtime and `epub-thumbnailer` with attendant xorg-specific utilities</dd>
+  <dd>`lsix` does not by itself provide out-of-box behaviour needed for a filemanager; it does not render video, audio or epub and will not manage a file cache.</dd>
+  <dd>`vifmimg` requires a bigger dependency tree including a python runtime and `epub-thumbnailer` with attendant xorg-specific utilities</dd>
+  <dd>`render-thumb-for.sh` provides more file-manager-functionality than `lsix` with a smaller dependency tree and simpler interface than `vifmimg`</dd>
   <dt>Anything else?</dt>
   <dd>Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` is new and will have bugs. `render-thumb-for.sh` may feel "slow" as it presently does not yet cache or reuse preview images it generates.</dd>
 </dl>
