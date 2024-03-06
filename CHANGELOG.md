@@ -9,7 +9,8 @@
    * remove commented-out example calls [#9](https://github.com/iambumblehead/render-thumb-for.sh/pull/9)
    * added demo gif [#10](https://github.com/iambumblehead/render-thumb-for.sh/pull/10)
    * smoke-tested the release pipeline and released v0.0.1
-   * begin integrating with vifm and [updating the README](https://github.com/iambumblehead/render-thumb-for.sh/pull/11)
+   * begin integrating with vifm and [update the README](https://github.com/iambumblehead/render-thumb-for.sh/pull/11)
+   * added vifm [gif to README](https://github.com/iambumblehead/render-thumb-for.sh/pull/11)
  * 0.0.2 _Mar.02.2024_
    * added video thumb generation [#2](https://github.com/iambumblehead/render-thumb-for.sh/pull/2)
    * added audio thumb generation [#3](https://github.com/iambumblehead/render-thumb-for.sh/pull/3)

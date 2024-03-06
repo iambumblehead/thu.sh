@@ -99,11 +99,13 @@ file_type_get () {
 wh_start_get () {
     w="$1"
     h="$2"
+    w_mul=$([ -n "$3" ] && echo "$3" || echo "1")
+    h_mul=$([ -n "$4" ] && echo "$4" || echo "1")
 
     [[ -z "$w" ]] && w="1000"
     [[ -z "$h" ]] && h="$w"
 
-    echo "$w $h"
+    echo "$(("$w"*"$w_mul")) $(("$h"*"$h_mul"))"
 }
 
 wh_max_get () {
@@ -116,7 +118,7 @@ wh_pointsize_get () {
     IFS=" " read -r -a wh <<< "$1"
 
     min=$((${wh[0]} > ${wh[1]} ? ${wh[1]} : ${wh[0]}))
-    mul=$((${wh[0]} > ${wh[1]} ? 8 : 10))
+    mul=$((${wh[0]} > ${wh[1]} ? 9 : 10))
 
     echo "$(($min / $mul))"
 }
@@ -416,7 +418,7 @@ show_font () {
 
 start () {
     path=$1
-    start_wh=$(wh_start_get "$2" "$3")
+    start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
 
     cachedir_calibrate "$cachedir"
 

@@ -20,18 +20,20 @@ render-thumb-for.sh /path/to/book.pdf
 render-thumb-for.sh /path/to/book.epub
 ```
 
+<img src="./test/render-for-vifm.gif" alt="vifm" align="right" height="240px">
+
 Add sixel image preview to the [vifm file manager.][3] First, download and extract the latest `render-thumb-for.sh` to vifm's xdg _~/.config/vifm/scripts/_. A one-liner command can be used [from the wiki][3]
 
-Finally, update vifmrc to use `render-thumb-for.sh`
+Finally, update vifmrc to use `render-thumb-for.sh` changing the width and height multipliers `30` and `64` below to suite your terminal and layout. Remove file extensions used by this fileviewer from all other fileviewer directives.
 _~/.config/vifm/vifmrc_
 ``` ini
-# traditional layout two-columns
-fileviewer *.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm
-         \ render-thumb-for.sh %c %pw %ph %pd
-
-# miller layout three-columns
-fileviewer *.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm
-         \ render-thumb-for.sh %c %pw %ph %pd
+fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.svg,*.pdf,*.epub,
+           \*.ttf,*.otf,*.woff,*.wav,*.mp3,*.flac,*.m4a,*.wma,*.ape,
+           \*.ac3,*.og[agx],*.spx,*.opus,*.aac,*.mpga,*.avi,*.mp4,
+           \*.wmv,*.dat,*.3gp,*.ogv,*.mkv,*.mpg,*.mpeg,*.vob,
+           \*.fl[icv],*.m2v,*.mov,*.webm,*.ts,*.mts,*.m4v,*.r[am],
+           \*.qt,*.divx,*.as[fx],*.unknown_video},
+         \ render-thumb-for.sh %c %pw %ph 30 64 %pd
 ```
 
 _**Suggestions and improvements are welcome and appreciated.** `render-thumb-for.sh` is new and will have bugs; please report them. `render-thumb-for.sh` may feel "slow" present;y because it does not yet cache or reuse preview images it generates_
