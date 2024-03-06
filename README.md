@@ -20,9 +20,11 @@ render-thumb-for.sh /path/to/book.pdf
 render-thumb-for.sh /path/to/book.epub
 ```
 
-<img src="./test/render-for-vifm.gif" alt="vifm" align="right" height="240px">
+<img src="./test/render-for-vifm.gif" alt="vifm" align="center" height="240px">
 
-Add sixel image preview to the [vifm file manager.][3] First, download and extract the latest `render-thumb-for.sh` to vifm's xdg _~/.config/vifm/scripts/_. A one-liner command can be used [from the wiki][3]
+</br />
+
+**Add sixel image preview** to the [vifm file manager.][3] First, download and extract the latest `render-thumb-for.sh` to vifm's xdg _~/.config/vifm/scripts/_. A one-liner command can be used [from the wiki][3]
 
 Finally, update vifmrc to use `render-thumb-for.sh` changing the width and height multipliers `30` and `64` below to suite your terminal and layout. Remove file extensions used by this fileviewer from all other fileviewer directives.
 _~/.config/vifm/vifmrc_
