@@ -24,7 +24,7 @@ render-thumb-for.sh /path/to/book.epub
 
 **Add sixel image preview** to the [vifm file manager.][3] 
 
-<div align="center"><img src="./test/render-for-vifm.gif" alt="vifm" height="240px"></div>
+<div align="left"><img src="./test/render-for-vifm.gif" alt="vifm" height="240px"></div>
 
 First, download and extract the latest `render-thumb-for.sh` to vifm's xdg _~/.config/vifm/scripts/_. A one-liner command can be used [from the wiki][3]
 
