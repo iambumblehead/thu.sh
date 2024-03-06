@@ -20,13 +20,15 @@ render-thumb-for.sh /path/to/book.pdf
 render-thumb-for.sh /path/to/book.epub
 ```
 
+_Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` is new and will have bugs. `render-thumb-for.sh` may feel "slow" presently because it does not yet cache or reuse preview images it generates._
+
+
+
 ----------------------------------------------
 
 **Add sixel image preview** to the [vifm file manager.][3] Instructions [at the wiki.][3]
 
 <div align="left"><img src="./test/render-for-vifm.gif" alt="vifm" height="240px"></div>
-
-_Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` is new and will have bugs. `render-thumb-for.sh` may feel "slow" presently because it does not yet cache or reuse preview images it generates._
 
 
 
