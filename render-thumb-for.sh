@@ -19,7 +19,6 @@ resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
-namecoverattr_re="name=['\"]cover['\"]"
 
 #default_wh="640 480"
 
@@ -199,7 +198,7 @@ epub_rootxml_parse_manifest () {
     itemid=$2
 
     while IFS=$'\n' read -r line; do
-        [[ $extract && $line =~ "id=\"$2\"" ]] &&
+        [[ $extract && $line =~ id=\"$itemid\" ]] &&
             printf '%s\n' "$line"
 
         [[ $line =~ "<manifest>" ]] && extract=1
@@ -269,7 +268,7 @@ show_epub () {
             "$epub_manifest_cover" \
             "./"
 
-        img_sixel_paint_downscale "$epub_manifest_cover_base" "$2"
+        img_sixel_paint_downscale "$epub_manifest_cover_base" "$epub_wh_max"
     fi
 }
 
@@ -410,12 +409,12 @@ start () {
     esac
 }
 
-start "/home/bumble/software/Guix_logo.png" 800 400
+#start "/home/bumble/software/Guix_logo.png" 800 400
 #start "/home/bumble/software/Guix_logo.svg" 800 800
 #start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
 #start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).epub" 800 400
-#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub" 800 400
+start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub" 800 400
 #start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
