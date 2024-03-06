@@ -4,6 +4,7 @@ is_cmd_convert=$(command -v convert)
 is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
+is_cmd_unzip=$(command -v unzip)
 
 mimeTypeSVG="svg"
 mimeTypeIMAGE="imgage"
@@ -15,13 +16,40 @@ mimeTypePDF="pdf"
 
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
 resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
+fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
+contentattr_re="content=['\"]([^'\"]*)['\"]"
+hrefattr_re="href=['\"]([^'\"]*)['\"]"
+namecoverattr_re="name=['\"]cover['\"]"
 
 #default_wh="640 480"
 
 img_dir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
-  img_dir="$XDG_CONFIG_HOME/render-thumb-for"
+    img_dir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
+
+regex() {
+    # Usage: regex "string" "regex"
+    [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
+}
+
+zip_read_file () {
+    if [[ -z "$is_cmd_unzip" ]]; then
+        echo "'unzip' command not found";
+        exit 1
+    fi
+
+    unzip -p "$1" "$2"
+}
+
+zip_move_file_out () {
+    if [[ -z "$is_cmd_unzip" ]]; then
+        echo "'unzip' command not found";
+        exit 1
+    fi
+
+    unzip -q -o -j "$1" "$2" -d "$3"
+}
 
 file_type_get () {
     mime=$(file -b --mime-type "$1")
@@ -99,7 +127,7 @@ img_wh_get () {
            [[ -z "$is_cmd_identify" ]]; then
         echo "'exiftool' or 'identify' commands not found";
         exit 1
-    elif [[ -n "$is_cmd_exiftool" ]]; then # shellcheck disable=SC2016
+    elif [[ -n "$is_cmd_exiftool" ]]; then
         img_wh_exiftool_get "$1"
     elif [[ -n "$is_cmd_identify" ]]; then
         img_wh_identify_get "$1"
@@ -157,35 +185,92 @@ img_sixel_paint_downscale () {
     img_sixel_paint "$img_path" "$img_wh_scaled"
 }
 
-epub_rootfile_get () {
-    root_file=$(zip -p "$1" "META-INF/container.xml")
+epub_containerxml_parse_rootfiles () {
+    while IFS=$'\n' read -r line; do
+        [[ $extract && $line != "$3" ]] &&
+            printf '%s\n' "$line"
 
-    echo "$1"
-    echo "$root_file"
-    # def _get_rootfile_root(epub):
-    # open the main container
-    # container = epub.open("META-INF/container.xml")
-    # container_root = minidom.parseString(container.read())
-
-    # locate the rootfile
-    # elem = container_root.getElementsByTagName("rootfile")[0]
-    # rootfile_path = elem.getAttribute("full-path")
-
-    # open the rootfile
-    # rootfile = epub.open(rootfile_path)
-    # return rootfile_path, minidom.parseString(rootfile.read())
+        [[ $line =~ "<rootfiles>" ]] && extract=1
+        [[ $line =~ "</rootfiles>" ]] && extract=
+    done < <(printf '%s\n' "$1")
 }
 
-# extract single file from zip
-# https://superuser.com/questions/600385/remove-single-file-from-zip-archive-on-linux
+epub_rootxml_parse_manifest () {
+    itemid=$2
+
+    while IFS=$'\n' read -r line; do
+        [[ $extract && $line =~ "id=\"$2\"" ]] &&
+            printf '%s\n' "$line"
+
+        [[ $line =~ "<manifest>" ]] && extract=1
+        [[ $line =~ "</manifest>" ]] && extract=
+    done < <(printf '%s\n' "$1")
+
+}
+
+epub_containerxml_parse_root_path () {
+    rootfiles=$(epub_containerxml_parse_rootfiles "$1")
+
+    regex "$rootfiles" "$fullpathattr_re"
+}
+
+epub_rootxml_parse_metacover_content () {
+    metacover_match=""
+
+    while IFS=$'\n' read -r line; do
+        if [[ $line =~ "<meta"[[:space:]] && $line =~ "name=\"cover\"" ]]; then
+            metacover_match=$(regex "$line" "$contentattr_re")
+
+            break
+        fi
+    done < <(printf '%s\n' "$1")
+
+    echo "$metacover_match"
+}
+
+epub_rootxmlpath_get () {
+    epub_cxml=$(zip_read_file "$1" "META-INF/container.xml")
+
+    epub_containerxml_parse_root_path "$epub_cxml"
+}
+
+epub_rootfile_manifestcover_get () {
+    epub_rxmlpath=$(epub_rootxmlpath_get "$1")
+    epub_rxml=$(zip_read_file "$1" "$epub_rxmlpath")
+    epub_rxml_metacontentid=$(
+        epub_rootxml_parse_metacover_content "$epub_rxml")
+    epub_rxml_manifitem=$(
+        epub_rootxml_parse_manifest "$epub_rxml" "$epub_rxml_metacontentid")
+    epub_rxml_manifitemhref=$(
+        regex "$epub_rxml_manifitem" "$hrefattr_re")
+
+    if [[ -n "$epub_rxml_manifitemhref" ]]; then
+        if [[ "$epub_rxml_manifitemhref" != /* ]]; then
+            # if cover does not sstart on root path, attach to manifest path
+            epub_rxml_dir=$(dirname "$epub_rxmlpath")
+            epub_rxml_manifitemhref="$epub_rxml_dir/$epub_rxml_manifitemhref"
+        fi
+    fi
+
+    echo "$epub_rxml_manifitemhref"
+}
+
 show_epub () {
     epub_path=$1
     epub_wh_max=$2
     epub_ls=$(unzip -l "$1")
+    epub_manifest_cover=$(epub_rootfile_manifestcover_get "$1")
+    epub_manifest_cover_ext="${epub_manifest_cover##*.}"
+    epub_manifest_cover_base=$(basename "$epub_manifest_cover")
 
-    epub_rootfile_get "$1"
-    # https://github.com/marianosimone/epub-thumbnailer/blob/master/src/epub-thumbnailer.py
-    # echo "show $epub_ls"
+    if [[ -n "$epub_manifest_cover" && -n "$epub_manifest_cover_ext" ]]; then
+        zip_move_file_out \
+            "$epub_path" \
+            "$epub_manifest_cover" \
+            "./"
+
+        img_sixel_paint_downscale "$epub_manifest_cover_base" "$2"
+    fi
 }
 
 show_video () {
@@ -278,15 +363,15 @@ show_font () {
         exit 1
     fi
 
-   convert \
-       -size "${font_wh_max/ /x}" \
-       -background "$font_bg_color" \
-       -fill "$font_fg_color" \
-       -font "$font_path" \
-       -pointsize "$font_pointsize" \
-       -gravity Center \
-       "label:${font_preview_multiline}" \
-       fontout.jpg
+    convert \
+        -size "${font_wh_max/ /x}" \
+        -background "$font_bg_color" \
+        -fill "$font_fg_color" \
+        -font "$font_path" \
+        -pointsize "$font_pointsize" \
+        -gravity Center \
+        "label:${font_preview_multiline}" \
+        fontout.jpg
 
     img_sixel_paint "fontout.jpg" "$font_wh_max"
 }
@@ -314,7 +399,7 @@ start () {
             ;;
         "$mimeTypeEPUB")
             show_epub "$path" "$max_wh"
-            ;;            
+            ;;
         "$mimeTypePDF")
             show_pdf "$path" "$max_wh"
             ;;
@@ -325,12 +410,12 @@ start () {
     esac
 }
 
-#start "/home/bumble/software/Guix_logo.png" 800 400
+start "/home/bumble/software/Guix_logo.png" 800 400
 #start "/home/bumble/software/Guix_logo.svg" 800 800
 #start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
 #start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).epub" 800 400
-start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub" 800 400
+#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub" 800 400
 #start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
