@@ -29,6 +29,8 @@ render-thumb-for.sh /path/to/book.epub
 First, download and extract the latest `render-thumb-for.sh` to vifm's xdg _~/.config/vifm/scripts/_. A one-liner command can be used [from the wiki][3]
 
 Then update vifmrc to use `render-thumb-for.sh` changing width and height multipliers `30` and `64` below to suite your terminal and layout. Remove file extensions used by this fileviewer from all other fileviewer directives.
+
+
 _~/.config/vifm/vifmrc_
 ``` ini
 fileviewer {*.bmp,*.jpg,*.jpeg,*.png,*.gif,*.xpm,*.svg,*.pdf,*.epub,
