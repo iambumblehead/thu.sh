@@ -257,7 +257,7 @@ epub_rootfile_manifestcover_get () {
 show_epub () {
     epub_path=$1
     epub_wh_max=$2
-    epub_ls=$(unzip -l "$1")
+    #epub_ls=$(unzip -l "$1")
     epub_manifest_cover=$(epub_rootfile_manifestcover_get "$1")
     epub_manifest_cover_ext="${epub_manifest_cover##*.}"
     epub_manifest_cover_base=$(basename "$epub_manifest_cover")
