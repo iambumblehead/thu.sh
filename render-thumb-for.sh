@@ -72,10 +72,8 @@ file_type_get () {
 }
 
 wh_start_get () {
-    # shell-check dislikes separate w and h params
-    IFS=" " read -r -a wh <<< "$1"
-    w="${wh[1]}"
-    h="${wh[2]}"
+    w="$1"
+    h="$2"
 
     [[ -z "$w" ]] && w="1000"
     [[ -z "$h" ]] && h="$w"
@@ -387,7 +385,7 @@ show_font () {
 
 start () {
     path=$1
-    start_wh=$(wh_start_get "$2 $3")
+    start_wh=$(wh_start_get "$2" "$3")
     
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
@@ -421,7 +419,7 @@ start () {
 
 #start "/home/bumble/software/Guix_logo.png" 800 400
 #start "/home/bumble/software/Guix_logo.svg" 800 800
-start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4"
+#start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4"
 #start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).epub" 800 400
