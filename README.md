@@ -1,4 +1,4 @@
-<h3 align="center"><img src="./test/render-for.demo.gif" alt="demo" height="100px"></h3>
+<h3 align="center"><img src="./test/render-for.demo.gif" alt="demo" height="400px"></h3>
 <p align="center"><code>render-for.sh</code> renders preview images to the terminal; ~500 LOC bash</p>
 <p align="center">
 <a href="https://github.com/iambumblehead/render-thumb-for.sh/workflows"><img src="https://github.com/iambumblehead/render-thumb-for.sh/workflows/shellcheck/badge.svg"></a>
