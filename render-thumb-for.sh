@@ -20,9 +20,9 @@ fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
 
-img_dir="$HOME/.config/render-thumb-for"
+cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
-    img_dir="$XDG_CONFIG_HOME/render-thumb-for"
+    cachedir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
 
 regex() {
@@ -46,6 +46,25 @@ zip_move_file_out () {
     fi
 
     unzip -q -o -j "$1" "$2" -d "$3"
+}
+
+cachedir_calibrate () {
+    cachedir="$1"
+
+    if [ ! -d "$cachedir" ]; then
+        mkdir -p "$cachedir"
+    fi
+}
+
+# behaviour can be expanded later
+cachedir_path_get () {
+    cachedir="$1"
+    pathbase="$2"
+    pathwh="${3/ /x}"
+    pathextn="${4:1}" #remove dot eg .jpg -> jpg
+    pathname="$pathbase.$pathwh.$pathextn"
+    
+    echo "$cachedir/$pathname"
 }
 
 file_type_get () {
@@ -269,14 +288,15 @@ show_epub () {
     epub_manifest_cover=$(epub_rootfile_manifestcover_get "$1")
     epub_manifest_cover_ext="${epub_manifest_cover##*.}"
     epub_manifest_cover_base=$(basename "$epub_manifest_cover")
+    epub_manifest_cover_dest="$cachedir/$epub_manifest_cover_base"
 
     if [[ -n "$epub_manifest_cover" && -n "$epub_manifest_cover_ext" ]]; then
         zip_move_file_out \
             "$epub_path" \
             "$epub_manifest_cover" \
-            "./"
+            "$cachedir"
 
-        img_sixel_paint_downscale "$epub_manifest_cover_base" "$epub_wh_max"
+        img_sixel_paint_downscale "$epub_manifest_cover_dest" "$epub_wh_max"
     fi
 }
 
@@ -288,6 +308,7 @@ show_video () {
     vid_wh_native=$(video_resolution_ffmpeg_parse "$vid_ffmpeg_output")
     vid_wh_scaled=$(wh_scaled_get "$vid_wh_native" "$vid_wh_max")
     vid_frame_ss=$(($vid_duration_ss / 5))
+    vid_thumb_path=$(cachedir_path_get "$cachedir" "video" "w h" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
         echo "'exiftool' or 'identify' commands not found";
@@ -304,9 +325,9 @@ show_video () {
         -f image2 \
         -loglevel error \
         -hide_banner \
-        -y screenshot.png
+        -y "$vid_thumb_path"
 
-    img_sixel_paint "screenshot.png" "$vid_wh_scaled"
+    img_sixel_paint "$vid_thumb_path" "$vid_wh_scaled"
 }
 
 show_audio () {
@@ -315,6 +336,7 @@ show_audio () {
     aud_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
     aud_wh_native=$(video_resolution_ffmpeg_parse "$aud_ffmpeg_output")
     aud_wh_scaled=$(wh_scaled_get "$aud_wh_native" "$aud_wh_max")
+    aud_thumb_path=$(cachedir_path_get "$cachedir" "audio" "w h" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
         echo "'exiftool' or 'identify' commands not found";
@@ -331,22 +353,24 @@ show_audio () {
         -f image2 \
         -loglevel error \
         -hide_banner \
-        -y audioshot.png
+        -y "$aud_thumb_path"
 
-    img_sixel_paint "audioshot.png" "$aud_wh_scaled"
+    img_sixel_paint "$aud_thumb_path" "$aud_wh_scaled"
 }
 
 show_pdf () {
     pdf_path=$1
     pdf_wh_max=$2
+    pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
 
+    # extension needs to be removed from output path "pattern" used here
     pdftoppm \
         -singlefile \
         -f 1 -l 1 \
         -scale-to "$(wh_max_get "$2")" \
-        -jpeg "$pdf_path" "pdfhot"
+        -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
 
-    img_sixel_paint "pdfhot.jpg" "$pdf_wh_max"
+    img_sixel_paint "$pdf_thumb_path" "$pdf_wh_max"
 }
 
 # shellcheck disable=SC2116
@@ -364,6 +388,7 @@ show_font () {
              "1234567890" \
              "!@$\%(){}[]")
     font_preview_multiline=${font_preview_text// /\\n}
+    font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
 
     if [[ -z "$is_cmd_convert" ]]; then
         echo "'convert' command not found (imagemagick)";
@@ -378,18 +403,16 @@ show_font () {
         -pointsize "$font_pointsize" \
         -gravity Center \
         "label:${font_preview_multiline}" \
-        fontout.jpg
+        "$font_thumb_path"
 
-    img_sixel_paint "fontout.jpg" "$font_wh_max"
+    img_sixel_paint "$font_thumb_path" "$font_wh_max"
 }
 
 start () {
     path=$1
     start_wh=$(wh_start_get "$2" "$3")
-    
-    if [ ! -d "${img_dir}" ]; then
-        mkdir -p "${img_dir}"
-    fi
+
+    cachedir_calibrate "$cachedir"
 
     case $(file_type_get "$path") in
         "$mimeTypeSVG")
@@ -424,5 +447,5 @@ start () {
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).epub" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub"
-#start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
+start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1

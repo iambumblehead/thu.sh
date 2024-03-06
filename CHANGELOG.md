@@ -5,6 +5,7 @@
    * added font thumb generation [#5](https://github.com/iambumblehead/render-thumb-for.sh/pull/5)
    * added epub thumb generation [#7](https://github.com/iambumblehead/render-thumb-for.sh/pull/7)
    * added function to return simplified filetype for file [#6](https://github.com/iambumblehead/render-thumb-for.sh/pull/6)
+   * use temp directory as generated image destination [#8](https://github.com/iambumblehead/render-thumb-for.sh/pull/8)
  * 0.0.2 _Mar.02.2024_
    * added video thumb generation [#2](https://github.com/iambumblehead/render-thumb-for.sh/pull/2)
    * added audio thumb generation [#3](https://github.com/iambumblehead/render-thumb-for.sh/pull/3)
