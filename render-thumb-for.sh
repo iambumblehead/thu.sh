@@ -72,7 +72,7 @@ file_type_get () {
 }
 
 wh_start_get () {
-    # shellcheck does not like w and h as separate params
+    # shell-check dislikes separate w and h params
     IFS=" " read -r -a wh <<< "$1"
     w="${wh[1]}"
     h="${wh[2]}"
