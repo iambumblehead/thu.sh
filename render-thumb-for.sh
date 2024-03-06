@@ -72,8 +72,10 @@ file_type_get () {
 }
 
 wh_start_get () {
-    w="$1"
-    h="$2"
+    # shellcheck does not like w and h as separate params
+    IFS=" " read -r -a wh <<< "$1"
+    w="${wh[1]}"
+    h="${wh[2]}"
 
     [[ -z "$w" ]] && w="1000"
     [[ -z "$h" ]] && h="$w"
@@ -385,7 +387,7 @@ show_font () {
 
 start () {
     path=$1
-    wh=$(wh_start_get "$2" "$3")
+    wh=$(wh_start_get "$2 $3")
 
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
