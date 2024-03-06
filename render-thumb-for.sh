@@ -1,4 +1,10 @@
 #!/usr/bin/env bash
+#
+# ex,
+# ./render-thumb-for.sh /path/to/file.png 800 400
+# ./render-thumb-for.sh /path/to/file.pdf
+# ./render-thumb-for.sh /path/to/file.ttf
+# ./render-thumb-for.sh /path/to/file.mp4 1020 780
 
 is_cmd_convert=$(command -v convert)
 is_cmd_exiftool=$(command -v exiftool)
@@ -439,13 +445,4 @@ start () {
         *)
     esac
 }
-
-#start "/home/bumble/software/Guix_logo.png" 800 400
-#start "/home/bumble/software/Guix_logo.svg" 800 800
-#start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4"
-#start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
-#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
-#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).epub" 800 400
-#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub"
-start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
-# ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
+start "$@"
