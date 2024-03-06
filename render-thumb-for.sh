@@ -20,8 +20,6 @@ fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
 
-#default_wh="640 480"
-
 img_dir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
     img_dir="$XDG_CONFIG_HOME/render-thumb-for"
@@ -71,6 +69,16 @@ file_type_get () {
     else
         echo "unsupported"
     fi
+}
+
+wh_start_get () {
+    w="$1"
+    h="$2"
+
+    [[ -z "$w" ]] && w="1000"
+    [[ -z "$h" ]] && h="$w"
+
+    echo "$w $h"
 }
 
 wh_max_get () {
@@ -377,7 +385,7 @@ show_font () {
 
 start () {
     path=$1
-    max_wh="$2 $3"
+    wh=$(wh_start_get "$2" "$3")
 
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
@@ -385,25 +393,25 @@ start () {
 
     case $(file_type_get "$path") in
         "$mimeTypeSVG")
-            img_sixel_paint "$path" "$max_wh"
+            img_sixel_paint "$path" "$wh"
 	    ;;
         "$mimeTypeIMAGE")
-            img_sixel_paint_downscale "$path" "$max_wh"
+            img_sixel_paint_downscale "$path" "$wh"
 	    ;;
         "$mimeTypeVIDEO")
-            show_video "$path" "$max_wh"
+            show_video "$path" "$wh"
             ;;
         "$mimeTypeAUDIO")
-            show_audio "$path" "$max_wh"
+            show_audio "$path" "$wh"
             ;;
         "$mimeTypeEPUB")
-            show_epub "$path" "$max_wh"
+            show_epub "$path" "$wh"
             ;;
         "$mimeTypePDF")
-            show_pdf "$path" "$max_wh"
+            show_pdf "$path" "$wh"
             ;;
         "$mimeTypeFONT")
-            show_font "$path" "$max_wh"
+            show_font "$path" "$wh"
             ;;
         *)
     esac
