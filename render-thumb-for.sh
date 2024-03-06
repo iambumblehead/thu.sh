@@ -387,33 +387,33 @@ show_font () {
 
 start () {
     path=$1
-    wh=$(wh_start_get "$2 $3")
-
+    start_wh=$(wh_start_get "$2 $3")
+    
     if [ ! -d "${img_dir}" ]; then
         mkdir -p "${img_dir}"
     fi
 
     case $(file_type_get "$path") in
         "$mimeTypeSVG")
-            img_sixel_paint "$path" "$wh"
+            img_sixel_paint "$path" "$start_wh"
 	    ;;
         "$mimeTypeIMAGE")
-            img_sixel_paint_downscale "$path" "$wh"
+            img_sixel_paint_downscale "$path" "$start_wh"
 	    ;;
         "$mimeTypeVIDEO")
-            show_video "$path" "$wh"
+            show_video "$path" "$start_wh"
             ;;
         "$mimeTypeAUDIO")
-            show_audio "$path" "$wh"
+            show_audio "$path" "$start_wh"
             ;;
         "$mimeTypeEPUB")
-            show_epub "$path" "$wh"
+            show_epub "$path" "$start_wh"
             ;;
         "$mimeTypePDF")
-            show_pdf "$path" "$wh"
+            show_pdf "$path" "$start_wh"
             ;;
         "$mimeTypeFONT")
-            show_font "$path" "$wh"
+            show_font "$path" "$start_wh"
             ;;
         *)
     esac
@@ -421,7 +421,7 @@ start () {
 
 #start "/home/bumble/software/Guix_logo.png" 800 400
 #start "/home/bumble/software/Guix_logo.svg" 800 800
-#start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" 800 400
+start "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4"
 #start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).epub" 800 400
