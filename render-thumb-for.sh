@@ -423,6 +423,6 @@ start () {
 #start "/home/bumble/音楽/language/日本語 - Assimil/Assimil 10 テレビ.flac" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).pdf" 800 400
 #start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana___Kanji_Edition).epub" 800 400
-start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub" 800 400
+#start "/home/bumble/ドキュメント/8020japanese/80-20_Japanese_(Kana-Kanji_Edition).epub"
 #start "/home/bumble/software/old.bumblehead.gitlab.io/src/font/ubuntu/ubuntu.bold.ttf" 400 800
 # ffmpeg -i "/home/bumble/ビデオ/#338 - The Commissioning of Truth [stream_19213].mp4" -vframes 1 -f rawvideo -y /dev/null 2>&1
