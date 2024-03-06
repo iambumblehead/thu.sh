@@ -20,7 +20,7 @@ render-for.sh /path/to/book.pdf
 render-for.sh /path/to/book.epub
 ```
 
-_Suggestions and improvements are welcome. `render-for.sh` is new and may have bugs; please report them. `render-for.sh` may feel "slow" because it does not yet cache or reuse preview images it generates_
+_**Suggestions and improvements are welcome.** `render-for.sh` is new and may have bugs; please report them. `render-for.sh` may feel "slow" because it does not yet cache or reuse preview images it generates_
 
 
 [0]: https://img.shields.io/badge/license-ISC-blue.svg
