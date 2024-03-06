@@ -20,15 +20,25 @@ render-thumb-for.sh /path/to/book.pdf
 render-thumb-for.sh /path/to/book.epub
 ```
 
-_Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` is new and will have bugs. `render-thumb-for.sh` may feel "slow" presently because it does not yet cache or reuse preview images it generates._
-
+<dl>
+  <dt>Which terminal emulators are capabale of rendering images?</dt>
+  <dd>A terminal emulator I use on GNU/Linux is "foot". Support for other terminals is listed here https://www.arewesixelyet.com/</dd>
+  <dt>What dependencies are needed?</dt>
+  <dd>`imagemagick`, `ffmpeg` (video, audio), `unzip` (epub), `pdftoppm` (pdf) and `exiftool` is optionally used when the command is available, else system `identity` command is used.</dd>
+  <dt>What is the benefit of `render-thumb-for.sh` compared to `lsix` or `vifmimg`?</dt>
+  <dd>`lsix` does not by itself provide out-of-box behaviour needed for a filemanager. It does not render video, audio or epub and will not manage a file cache. `vifmimg` requires a bigger dependency tree including a python runtime and `epub-thumbnailer` with attendant xorg-specific utilities</dd>
+  <dt>Anything else?</dt>
+  <dd>Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` is new and will have bugs. `render-thumb-for.sh` may feel "slow" as it presently does not yet cache or reuse preview images it generates.</dd>
+</dl>
 
 
 ----------------------------------------------
 
 **Add sixel image preview** to the [vifm file manager.][3] Instructions [at the wiki.][3]
 
-<div align="left"><img src="./test/render-for-vifm.gif" alt="vifm" height="240px"></div>
+<div align="left">
+<img src="./test/render-for-vifm.gif" alt="vifm" height="240px"> <img src="./test/render-for-miller.png" alt="vifm" height="240px">
+</div>
 
 
 

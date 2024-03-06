@@ -319,7 +319,7 @@ show_video () {
     vid_thumb_path=$(cachedir_path_get "$cachedir" "video" "w h" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
-        echo "'exiftool' or 'identify' commands not found";
+        echo "'ffmpeg' command not found";
         exit 1
     fi
 
@@ -347,7 +347,7 @@ show_audio () {
     aud_thumb_path=$(cachedir_path_get "$cachedir" "audio" "w h" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
-        echo "'exiftool' or 'identify' commands not found";
+        echo "'ffmpeg' command not found";
         exit 1
     fi
 
