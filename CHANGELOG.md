@@ -1,5 +1,7 @@
 # changelog
 
+ * 0.0.5 _Mar.07.2024_
+   * added support iterm2 mac [#14](https://github.com/iambumblehead/render-thumb-for.sh/pull/14)
  * 0.0.4 _Mar.06.2024_
    * added pdf support for optional mutool command [#13](https://github.com/iambumblehead/render-thumb-for.sh/pull/13)
  * 0.0.3 _Mar.06.2024_
