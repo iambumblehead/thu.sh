@@ -450,7 +450,7 @@ start () {
         "$mimeTypePDF")
             show_pdf "$path" "$start_wh";;
         "$mimeTypeFONT")
-x            show_font "$path" "$start_wh";;
+            show_font "$path" "$start_wh";;
         *)
     esac
 }
