@@ -24,7 +24,7 @@ render-thumb-for.sh /path/to/book.epub
   <dt>Which terminal emulators are capabale of rendering images?</dt>
   <dd>A great terminal emulator on GNU/Linux is "foot". Support for other terminals is listed here https://www.arewesixelyet.com/</dd>
   <dt>What dependencies are needed?</dt>
-  <dd>`imagemagick`, `ffmpeg` (video, audio), `unzip` (epub), `pdftoppm` (pdf) and `exiftool` is optionally used when the command is available, else system `identity` command is used.</dd>
+  <dd>`imagemagick`, `ffmpeg` (video, audio), `unzip` (epub), `pdftoppm` or `mutool` (pdf) and `exiftool` is optionally used when the command is available, else system `identity` command is used.</dd>
   <dt>What is the benefit of `render-thumb-for.sh` compared to `lsix` or `vifmimg`?</dt>
   <dd>`lsix` does not by itself provide out-of-box behaviour needed for a filemanager; it does not render video, audio or epub and will not manage a file cache.</dd>
   <dd>`vifmimg` requires a bigger dependency tree including a python runtime and `epub-thumbnailer` with attendant xorg-specific utilities</dd>
