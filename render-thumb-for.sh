@@ -34,6 +34,13 @@ if [ -n "${XDG_CONFIG_HOME}" ]; then
     cachedir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
 
+if [ -n "$is_cmd_kitten" ]; then
+    if [ ! "$(kitten icat --detect-support 2>&1)" ]; then
+        echo "kitty icat unsupported"
+        exit 1
+    fi
+fi
+
 regex() {
     # Usage: regex "string" "regex"
     [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
