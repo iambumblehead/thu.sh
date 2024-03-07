@@ -6,6 +6,8 @@
 # ./render-thumb-for.sh /path/to/file.ttf
 # ./render-thumb-for.sh /path/to/file.mp4 1020 780
 
+is_cmd_mutool=$(command -v mutool)
+is_cmd_pdftoppm=$(command -v pdftoppm)
 is_cmd_convert=$(command -v convert)
 is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
@@ -369,14 +371,26 @@ show_audio () {
 show_pdf () {
     pdf_path=$1
     pdf_wh_max=$2
-    pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
+    pdf_thumb_path=""
 
-    # extension needs to be removed from output path "pattern" used here
-    pdftoppm \
-        -singlefile \
-        -f 1 -l 1 \
-        -scale-to "$(wh_max_get "$2")" \
-        -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
+    if [[ -z "$is_cmd_mutool" ]] && \
+           [[ -z "$is_cmd_pdftoppm" ]]; then
+        echo "'mutool' or 'pdftoppm' commands not found";
+        exit 1
+    elif [[ -n "$is_cmd_mutool" ]]; then
+        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
+        mutool \
+            draw -i -F png \
+            -o "$pdf_thumb_path" "$pdf_path" 1 &> /dev/null
+    elif [[ -n "$is_cmd_pdftoppm" ]]; then
+        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
+        # extension needs to be removed from output path "pattern" used here
+        pdftoppm \
+            -singlefile \
+            -f 1 -l 1 \
+            -scale-to "$(wh_max_get "$2")" \
+            -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
+    fi
 
     img_sixel_paint "$pdf_thumb_path" "$pdf_wh_max"
 }
@@ -424,26 +438,19 @@ start () {
 
     case $(file_type_get "$path") in
         "$mimeTypeSVG")
-            img_sixel_paint "$path" "$start_wh"
-	    ;;
+            img_sixel_paint "$path" "$start_wh";;
         "$mimeTypeIMAGE")
-            img_sixel_paint_downscale "$path" "$start_wh"
-	    ;;
+            img_sixel_paint_downscale "$path" "$start_wh";;
         "$mimeTypeVIDEO")
-            show_video "$path" "$start_wh"
-            ;;
+            show_video "$path" "$start_wh";;
         "$mimeTypeAUDIO")
-            show_audio "$path" "$start_wh"
-            ;;
+            show_audio "$path" "$start_wh";;
         "$mimeTypeEPUB")
-            show_epub "$path" "$start_wh"
-            ;;
+            show_epub "$path" "$start_wh";;
         "$mimeTypePDF")
-            show_pdf "$path" "$start_wh"
-            ;;
+            show_pdf "$path" "$start_wh";;
         "$mimeTypeFONT")
-            show_font "$path" "$start_wh"
-            ;;
+            show_font "$path" "$start_wh";;
         *)
     esac
 }
