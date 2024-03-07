@@ -41,17 +41,13 @@ if [ -n "$is_cmd_kitten" ]; then
     fi
 fi
 
-# devel-chm
-# https://discourse.julialang.org/t/
-#  /terminal-control-characters-to-xterm-mintty-blocked-on-windows/94006/2
+# thank you @topcat001
+# https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
+printf "\e[c"; read -sd 'c' support
 is_sixel_support=
-IFS=";" read -a REPLY -s -t 1 -d "c" -p $'\e[c' >&2
-for code in "${REPLY[@]}" ; do
-    if [[ $code == 4 ]]; then
-        is_sixel_support="true"
-        break
-    fi
-done
+if [[ $(tr -d '\033' <<< $support) =~ "4" ]]; then
+    is_sixel_support="true"
+fi
 
 regex() {
     # Usage: regex "string" "regex"
