@@ -43,7 +43,8 @@ fi
 
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
-printf "\e[c"; read -sd 'c' support
+# shellcheck disable=SC2162
+printf "\e[c"; read -sd "c" support
 is_sixel_support=
 if [[ $(tr -d '\033' <<< $support) =~ "4" ]]; then
     is_sixel_support="true"
