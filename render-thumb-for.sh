@@ -107,7 +107,8 @@ wh_start_get () {
     [[ -z "$w" ]] && w="1000"
     [[ -z "$h" ]] && h="$w"
 
-    echo "$(("$w"*"$w_mul")) $(("$h"*"$h_mul"))"
+    
+    echo "$((${w} * ${w_mul})) $((${h} * ${h_mul}))"
 }
 
 wh_max_get () {
