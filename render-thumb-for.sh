@@ -6,6 +6,7 @@
 # ./render-thumb-for.sh /path/to/file.ttf
 # ./render-thumb-for.sh /path/to/file.mp4 1020 780
 
+is_cmd_kitten=$(command -v kitten)
 is_cmd_mutool=$(command -v mutool)
 is_cmd_pdftoppm=$(command -v pdftoppm)
 is_cmd_convert=$(command -v convert)
@@ -96,6 +97,35 @@ file_type_get () {
     else
         echo "unsupported"
     fi
+}
+
+paint () {
+    img_path=$1
+    img_wh=$2
+
+    if [[ -n "$is_cmd_kitten" ]]; then
+        # kitten does not provide a 'geometry' option
+        # so image must have been preprocessed to fit desired geometry
+        kitten icat --align left "$img_path"
+    else
+        export MAGICK_OCL_DEVICE=true
+        convert \
+            -channel rgba \
+            -background "rgba(0,0,0,0)" \
+            -geometry "${img_wh/ /x}" \
+            "$img_path" sixel:-
+
+        echo ""
+    fi
+}
+
+paint_downscale () {
+    img_path=$1
+    img_wh_max=$2
+    img_wh_native=$(img_wh_get "$img_path")
+    img_wh_scaled=$(wh_scaled_get "$img_wh_native" "$img_wh_max")
+
+    paint "$img_path" "$img_wh_scaled"
 }
 
 wh_start_get () {
@@ -199,29 +229,6 @@ video_resolution_ffmpeg_parse () {
     echo "${resolution_match/x/ }"
 }
 
-img_sixel_paint () {
-    img_path=$1
-    img_wh=$2
-
-    export MAGICK_OCL_DEVICE=true
-    convert \
-        -channel rgba \
-        -background "rgba(0,0,0,0)" \
-        -geometry "${img_wh/ /x}" \
-        "$img_path" sixel:-
-
-    echo ""
-}
-
-img_sixel_paint_downscale () {
-    img_path=$1
-    img_wh_max=$2
-    img_wh_native=$(img_wh_get "$img_path")
-    img_wh_scaled=$(wh_scaled_get "$img_wh_native" "$img_wh_max")
-
-    img_sixel_paint "$img_path" "$img_wh_scaled"
-}
-
 epub_containerxml_parse_rootfiles () {
     while IFS=$'\n' read -r line; do
         [[ $extract && $line != "$3" ]] &&
@@ -307,7 +314,7 @@ show_epub () {
             "$epub_manifest_cover" \
             "$cachedir"
 
-        img_sixel_paint_downscale "$epub_manifest_cover_dest" "$epub_wh_max"
+        paint_downscale "$epub_manifest_cover_dest" "$epub_wh_max"
     fi
 }
 
@@ -338,7 +345,7 @@ show_video () {
         -hide_banner \
         -y "$vid_thumb_path"
 
-    img_sixel_paint "$vid_thumb_path" "$vid_wh_scaled"
+    paint "$vid_thumb_path" "$vid_wh_scaled"
 }
 
 show_audio () {
@@ -366,7 +373,7 @@ show_audio () {
         -hide_banner \
         -y "$aud_thumb_path"
 
-    img_sixel_paint "$aud_thumb_path" "$aud_wh_scaled"
+    paint "$aud_thumb_path" "$aud_wh_scaled"
 }
 
 show_pdf () {
@@ -393,7 +400,7 @@ show_pdf () {
             -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
     fi
 
-    img_sixel_paint "$pdf_thumb_path" "$pdf_wh_max"
+    paint "$pdf_thumb_path" "$pdf_wh_max"
 }
 
 # shellcheck disable=SC2116
@@ -428,7 +435,7 @@ show_font () {
         "label:${font_preview_multiline}" \
         "$font_thumb_path"
 
-    img_sixel_paint "$font_thumb_path" "$font_wh_max"
+    paint "$font_thumb_path" "$font_wh_max"
 }
 
 start () {
@@ -439,9 +446,9 @@ start () {
 
     case $(file_type_get "$path") in
         "$mimeTypeSVG")
-            img_sixel_paint "$path" "$start_wh";;
+            paint "$path" "$start_wh";;
         "$mimeTypeIMAGE")
-            img_sixel_paint_downscale "$path" "$start_wh";;
+            paint_downscale "$path" "$start_wh";;
         "$mimeTypeVIDEO")
             show_video "$path" "$start_wh";;
         "$mimeTypeAUDIO")
