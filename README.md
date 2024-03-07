@@ -6,7 +6,7 @@
 <a href="https://github.com/iambumblehead/render-thumb-for.sh/releases"><img src="https://img.shields.io/github/release/iambumblehead/render-thumb-for.sh.svg"></a>
 </p>
 
-`render-thumb-for.sh` renders sixel or kitty images of various file type to the terminal, using ffmpeg and imagemagick.
+`render-thumb-for.sh` renders sixel or kitty images of various file type to the terminal using ffmpeg and imagemagick.
 ```bash
 # image, font, video, music, pdf and epub files
 render-thumb-for.sh /path/to/image.png
@@ -22,7 +22,8 @@ render-thumb-for.sh /path/to/book.epub
 
 <dl>
   <dt>Which terminal emulators are capabale of rendering images?</dt>
-  <dd>A great terminal emulator on GNU/Linux is "foot". Support for other terminals is listed here https://www.arewesixelyet.com/</dd>
+  <dd>A great terminal emulator on GNU/Linux is `foot` and it supports sixel images. Sixel support for other terminals is listed here https://www.arewesixelyet.com/</dd>
+  <dd>`iTerm2` and `kitty` also render images with this script</dd>
   <dt>What dependencies are needed?</dt>
   <dd>`imagemagick`, `ffmpeg` (video, audio), `unzip` (epub), `pdftoppm` or `mutool` (pdf) and `exiftool` is optionally used when the command is available, else system `identity` command is used.</dd>
   <dt>What is the benefit of `render-thumb-for.sh` compared to `lsix` or `vifmimg`?</dt>
