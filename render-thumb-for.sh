@@ -43,12 +43,16 @@ fi
 
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
-# shellcheck disable=SC2162
-printf "\e[c"; read -sd "c" support
-is_sixel_support=
-if [[ $(tr -d '\033' <<< "$support") =~ "4" ]]; then
-    is_sixel_support="true"
-fi
+is_sixel_support_get () {
+    IFS=";" read -a support -s -t 1 -d "c" -p $'\e[c' >&2
+    for code in "${support[@]}"; do
+        if [[ $code == 4 ]]; then
+            echo "true"
+            exit 1
+        fi
+    done
+}
+is_sixel_support=$(is_sixel_support_get)
 
 regex() {
     # Usage: regex "string" "regex"
