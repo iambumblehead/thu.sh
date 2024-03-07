@@ -46,7 +46,7 @@ fi
 # shellcheck disable=SC2162
 printf "\e[c"; read -sd "c" support
 is_sixel_support=
-if [[ $(tr -d '\033' <<< $support) =~ "4" ]]; then
+if [[ $(tr -d '\033' <<< "$support") =~ "4" ]]; then
     is_sixel_support="true"
 fi
 
