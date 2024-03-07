@@ -6,7 +6,7 @@
 <a href="https://github.com/iambumblehead/render-thumb-for.sh/releases"><img src="https://img.shields.io/github/release/iambumblehead/render-thumb-for.sh.svg"></a>
 </p>
 
-`render-thumb-for.sh` renders sixel images of various file type to the terminal, using ffmpeg and imagemagick.
+`render-thumb-for.sh` renders sixel or kitty images of various file type to the terminal, using ffmpeg and imagemagick.
 ```bash
 # image, font, video, music, pdf and epub files
 render-thumb-for.sh /path/to/image.png
@@ -26,9 +26,9 @@ render-thumb-for.sh /path/to/book.epub
   <dt>What dependencies are needed?</dt>
   <dd>`imagemagick`, `ffmpeg` (video, audio), `unzip` (epub), `pdftoppm` or `mutool` (pdf) and `exiftool` is optionally used when the command is available, else system `identity` command is used.</dd>
   <dt>What is the benefit of `render-thumb-for.sh` compared to `lsix` or `vifmimg`?</dt>
-  <dd>`lsix` does not by itself provide out-of-box behaviour needed for a filemanager; it does not render video, audio or epub and will not manage a file cache.</dd>
+  <dd>`lsix` does not by itself provide out-of-box behaviour needed for a filemanager; it does not render video, audio or epub and will not manage a file cache. It does render images to kitty terminal.</dd>
   <dd>`vifmimg` requires a bigger dependency tree including a python runtime and `epub-thumbnailer` with attendant xorg-specific utilities</dd>
-  <dd>`render-thumb-for.sh` provides more file-manager-functionality than `lsix` with a smaller dependency tree and simpler interface than `vifmimg`</dd>
+  <dd>`render-thumb-for.sh` provides more file-manager-functionality than `lsix` with a smaller dependency tree and simpler interface than `vifmimg`. It will also render images to kitty terminal emulator.</dd>
   <dt>Anything else?</dt>
   <dd>Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` is new and will have bugs. `render-thumb-for.sh` may feel "slow" as it presently does not yet cache or reuse preview images it generates.</dd>
 </dl>
