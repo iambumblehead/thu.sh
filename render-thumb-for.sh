@@ -41,6 +41,18 @@ if [ -n "$is_cmd_kitten" ]; then
     fi
 fi
 
+# devel-chm
+# https://discourse.julialang.org/t/
+#  /terminal-control-characters-to-xterm-mintty-blocked-on-windows/94006/2
+is_sixel_support=
+IFS=";" read -a REPLY -s -t 1 -d "c" -p $'\e[c' >&2
+for code in "${REPLY[@]}" ; do
+    if [[ $code == 4 ]]; then
+        is_sixel_support="true"
+        break
+    fi
+done
+
 regex() {
     # Usage: regex "string" "regex"
     [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
@@ -110,11 +122,7 @@ paint () {
     img_path=$1
     img_wh=$2
 
-    if [[ -n "$is_cmd_kitten" ]]; then
-        # kitten does not provide a 'geometry' option
-        # so image must have been preprocessed to fit desired geometry
-        kitten icat --align left "$img_path"
-    else
+    if [[ -n "$is_sixel_support" ]]; then
         export MAGICK_OCL_DEVICE=true
         convert \
             -channel rgba \
@@ -123,6 +131,10 @@ paint () {
             "$img_path" sixel:-
 
         echo ""
+    elif [[ -n "$is_cmd_kitten" ]]; then
+        # kitten does not provide a 'geometry' option
+        # so image must have been preprocessed to fit desired geometry
+        kitten icat --align left "$img_path"
     fi
 }
 
