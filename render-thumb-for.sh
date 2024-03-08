@@ -41,6 +41,21 @@ if [ -n "$is_cmd_kitten" ]; then
     fi
 fi
 
+# thank you @topcat001
+# https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
+is_sixel_support_get () {
+    support=(0)
+
+    IFS=";" read -r -a support -s -d "c" -p $'\e[c' >&2
+    for code in "${support[@]}"; do
+        if [[ $code == 4 ]]; then
+            echo "true"
+            exit 1
+        fi
+    done
+}
+is_sixel_support=$(is_sixel_support_get)
+
 regex() {
     # Usage: regex "string" "regex"
     [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
@@ -110,11 +125,7 @@ paint () {
     img_path=$1
     img_wh=$2
 
-    if [[ -n "$is_cmd_kitten" ]]; then
-        # kitten does not provide a 'geometry' option
-        # so image must have been preprocessed to fit desired geometry
-        kitten icat --align left "$img_path"
-    else
+    if [[ -n "$is_sixel_support" ]]; then
         export MAGICK_OCL_DEVICE=true
         convert \
             -channel rgba \
@@ -123,6 +134,10 @@ paint () {
             "$img_path" sixel:-
 
         echo ""
+    elif [[ -n "$is_cmd_kitten" ]]; then
+        # kitten does not provide a 'geometry' option
+        # so image must have been preprocessed to fit desired geometry
+        kitten icat --align left "$img_path"
     fi
 }
 
