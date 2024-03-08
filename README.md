@@ -6,7 +6,7 @@
 <a href="https://github.com/iambumblehead/render-thumb-for.sh/releases"><img src="https://img.shields.io/github/release/iambumblehead/render-thumb-for.sh.svg"></a>
 </p>
 
-`render-thumb-for.sh` renders images for various file types to the terminal. It renders images from audio, font, video, pdf, epub, svg and other files --supporting both kitty and sixel formats. It detects available commands from the system and has a small dependency tree,
+**render-thumb-for.sh renders images for various file types to the terminal.** It renders images from audio, font, video, pdf, epub, svg and other files --supporting both kitty and sixel formats. It detects available commands from the system and has a small dependency tree,
  * `imagemagick` (sixel) or `kitten icat` (kitty),
  * `ffmpeg` (video, audio),
  * `unzip` (epub),
@@ -15,7 +15,6 @@
 
 
 ```bash
-# image, font, video, music, pdf and epub files
 render-thumb-for.sh /path/to/image.png
 render-thumb-for.sh /path/to/font.ttf
 render-thumb-for.sh /path/to/video.mp4
@@ -32,7 +31,7 @@ render-thumb-for.sh /path/to/book.epub
   <dd>A great terminal emulator on GNU/Linux is `foot` and it supports sixel images. Sixel support for other terminals is listed here https://www.arewesixelyet.com/</dd>
   <dd>`iTerm2` and `kitty` also render images with this script</dd>
   <dt>Anything else?</dt>
-  <dd>Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` is new and will have bugs. `render-thumb-for.sh` may feel "slow" as it presently does not yet cache or reuse preview images it generates.</dd>
+  <dd>Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` may feel "slow" as it presently does not yet cache or reuse preview images it generates.</dd>
 </dl>
 
 
