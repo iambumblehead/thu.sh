@@ -57,19 +57,12 @@ is_sixel_support_get () {
 }
 is_sixel_support=$(is_sixel_support_get)
 
-cache="true"
-multipliers="1x1"
-while getopts "hcm:" opt; do
+cache="true" # getopts hcm: would force 'm' to have params
+while getopts "hc" opt; do
   case "${opt}" in
     c) cache="true";;
-    m) if [[ $OPTARG =~ $wxhstr_re ]]; then
-           multipliers="$OPTARG"
-       else
-           echo "multiplier must be in WxH format, ex 40x30"
-           exit 1
-       fi;;
     h|*) # Display help.
-        echo "-m to configure multipliers ex, -m 40x30"
+        echo "-c to configure cache ex, -c true"
         exit 0;;
   esac
 done
@@ -172,10 +165,8 @@ paint_downscale () {
 wh_start_get () {
     w="$1"
     h="$2"
-    IFS=" " read -r -a wh_mul <<< "${3/x/ }"
-
-    w_mul=$([ -n "${wh_mul[0]}" ] && echo "${wh_mul[0]}" || echo "1")
-    h_mul=$([ -n "${wh_mul[1]}" ] && echo "${wh_mul[1]}" || echo "1")
+    w_mul=$([ -n "$3" ] && echo "$3" || echo "1")
+    h_mul=$([ -n "$4" ] && echo "$4" || echo "1")
 
     [[ -z "$w" ]] && w="1000"
     [[ -z "$h" ]] && h="$w"
@@ -483,7 +474,7 @@ show_font () {
 
 start () {
     path=$1
-    start_wh=$(wh_start_get "$2" "$3" "$multipliers")
+    start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
 
     if [ -n "$cache" ]; then
         cachedir_calibrate "$cachedir"
