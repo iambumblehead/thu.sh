@@ -3,6 +3,7 @@
  * 0.0.6 _Mar.07.2024_
    * added sixel and kitty [differentiation to README](https://github.com/iambumblehead/render-thumb-for.sh/pull/16)
    * added [sixel detection](https://github.com/iambumblehead/render-thumb-for.sh/pull/17)
+   * added [getopts support](https://github.com/iambumblehead/render-thumb-for.sh/pull/23)
  * 0.0.5 _Mar.07.2024_
    * added support iterm2 mac [#14](https://github.com/iambumblehead/render-thumb-for.sh/pull/14)
    * added support kitty mac [#15](https://github.com/iambumblehead/render-thumb-for.sh/pull/15)

@@ -28,6 +28,7 @@ resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
+wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
 
 cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
@@ -55,6 +56,21 @@ is_sixel_support_get () {
     done
 }
 is_sixel_support=$(is_sixel_support_get)
+
+cache="true"
+multipliers="1x1"
+while getopts "cm:" opt; do
+  case "${opt}" in
+    c) cache="true";;
+    m) if [[ $OPTARG =~ $wxhstr_re ]]; then
+           multipliers="$OPTARG"
+       else
+           echo "multiplier must be in WxH format, ex 40x30"
+           exit 1
+       fi;;
+  esac
+done
+shift $(("$OPTIND" - 1))
 
 regex() {
     # Usage: regex "string" "regex"
@@ -153,8 +169,10 @@ paint_downscale () {
 wh_start_get () {
     w="$1"
     h="$2"
-    w_mul=$([ -n "$3" ] && echo "$3" || echo "1")
-    h_mul=$([ -n "$4" ] && echo "$4" || echo "1")
+    IFS=" " read -r -a wh_mul <<< "${3/x/ }"
+
+    w_mul=$([ -n "${wh_mul[0]}" ] && echo "${wh_mul[0]}" || echo "1")
+    h_mul=$([ -n "${wh_mul[1]}" ] && echo "${wh_mul[1]}" || echo "1")
 
     [[ -z "$w" ]] && w="1000"
     [[ -z "$h" ]] && h="$w"
@@ -462,7 +480,7 @@ show_font () {
 
 start () {
     path=$1
-    start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
+    start_wh=$(wh_start_get "$2" "$3" "$multipliers")
 
     cachedir_calibrate "$cachedir"
 
