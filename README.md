@@ -27,9 +27,8 @@ render-thumb-for.sh /path/to/book.epub
 ```
 
 <dl>
-  <dt>Which terminal emulators are capabale of rendering images?</dt>
-  <dd>A great terminal emulator on GNU/Linux is `foot` and it supports sixel images. Sixel support for other terminals is listed here https://www.arewesixelyet.com/</dd>
-  <dd>`iTerm2` and `kitty` also render images with this script</dd>
+  <dt>Which terminal emulators will render images?</dt>
+  <dd>`iTerm2`, `kitty` and `foot` can render images with this script. Sixel support for other terminals is listed here https://www.arewesixelyet.com/</dd>
   <dt>Anything else?</dt>
   <dd>Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` may feel "slow" as it presently does not yet cache or reuse preview images it generates.</dd>
 </dl>
