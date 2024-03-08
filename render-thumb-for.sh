@@ -44,7 +44,7 @@ fi
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
 is_sixel_support_get () {
-    IFS=";" read -r -a support -s -t 1 -d "c" -p $'\e[c' >&2
+    IFS=";" read -r -a support -s -d "c" -p $'\e[c' >&2
     for code in "${support[@]}"; do
         if [[ $code == 4 ]]; then
             echo "true"
