@@ -36,9 +36,8 @@ if [ -n "${XDG_CONFIG_HOME}" ]; then
 fi
 
 if [ -n "$is_cmd_kitten" ]; then
-    if [ ! "$(kitten icat --detect-support 2>&1)" ]; then
-        echo "kitty icat unsupported"
-        exit 1
+    if [ "$(kitten icat --detect-support 2>&1)" ]; then
+        is_cmd_kitten_icat_support=true
     fi
 fi
 
@@ -146,7 +145,7 @@ paint () {
             "$img_path" sixel:-
 
         echo ""
-    elif [[ -n "$is_cmd_kitten" ]]; then
+    elif [[ -n "$is_cmd_kitten_icat_support" ]]; then
         # kitten does not provide a 'geometry' option
         # so image must have been preprocessed to fit desired geometry
         kitten icat --align left "$img_path"
