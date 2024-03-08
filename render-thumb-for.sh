@@ -65,7 +65,7 @@ while getopts "hc" opt; do
         exit 0;;
   esac
 done
-shift $(("$OPTIND" - 1))
+shift $(($OPTIND - 1))
 
 regex() {
     # Usage: regex "string" "regex"
