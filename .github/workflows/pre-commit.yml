@@ -1,0 +1,6 @@
+repos:
+  - repo: https://github.com/pgrange/bash_unit
+    rev: v2.3.0
+    hooks:
+      - id: bash-unit
+        always-run: true
