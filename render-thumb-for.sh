@@ -28,6 +28,7 @@ resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
+#wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
 
 cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
@@ -55,6 +56,17 @@ is_sixel_support_get () {
     done
 }
 is_sixel_support=$(is_sixel_support_get)
+
+cache="true" # getopts hcm: would force 'm' to have params
+while getopts "hc" opt; do
+  case "${opt}" in
+    c) cache="true";;
+    h|*) # Display help.
+        echo "-c to configure cache ex, -c true"
+        exit 0;;
+  esac
+done
+shift $(("$OPTIND" - 1))
 
 regex() {
     # Usage: regex "string" "regex"
@@ -464,7 +476,9 @@ start () {
     path=$1
     start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
 
-    cachedir_calibrate "$cachedir"
+    if [ -n "$cache" ]; then
+        cachedir_calibrate "$cachedir"
+    fi
 
     case $(file_type_get "$path") in
         "$mimeTypeSVG")
