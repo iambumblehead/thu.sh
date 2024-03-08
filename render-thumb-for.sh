@@ -59,7 +59,7 @@ is_sixel_support=$(is_sixel_support_get)
 
 cache="true"
 multipliers="1x1"
-while getopts "cm:" opt; do
+while getopts "hcm:" opt; do
   case "${opt}" in
     c) cache="true";;
     m) if [[ $OPTARG =~ $wxhstr_re ]]; then
@@ -68,6 +68,9 @@ while getopts "cm:" opt; do
            echo "multiplier must be in WxH format, ex 40x30"
            exit 1
        fi;;
+    h|*) # Display help.
+        echo "-m to configure multipliers ex, -m 40x30"
+        exit 0;;
   esac
 done
 shift $(("$OPTIND" - 1))
@@ -482,7 +485,9 @@ start () {
     path=$1
     start_wh=$(wh_start_get "$2" "$3" "$multipliers")
 
-    cachedir_calibrate "$cachedir"
+    if [ -n "$cache" ]; then
+        cachedir_calibrate "$cachedir"
+    fi
 
     case $(file_type_get "$path") in
         "$mimeTypeSVG")
