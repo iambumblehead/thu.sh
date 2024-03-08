@@ -28,7 +28,7 @@ resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
-wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
+#wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
 
 cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
