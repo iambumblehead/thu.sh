@@ -7,7 +7,7 @@
 # ./render-thumb-for.sh /path/to/file.mp4 1020 780
 
 is_cmd_kitten=$(command -v kitten)
-[ $(command -v kitten) ] &&
+[ "$is_cmd_kitten" ] &&
     is_cmd_kitten_icat_support=$(kitten icat --detect-support 2>&1)
 is_cmd_mutool=$(command -v mutool)
 is_cmd_pdftoppm=$(command -v pdftoppm)
