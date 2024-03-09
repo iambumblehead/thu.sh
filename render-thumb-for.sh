@@ -7,6 +7,8 @@
 # ./render-thumb-for.sh /path/to/file.mp4 1020 780
 
 is_cmd_kitten=$(command -v kitten)
+[ "$is_cmd_kitten" ] &&
+    is_cmd_kitten_icat_support=$(kitten icat --detect-support 2>&1)
 is_cmd_mutool=$(command -v mutool)
 is_cmd_pdftoppm=$(command -v pdftoppm)
 is_cmd_convert=$(command -v convert)
@@ -35,13 +37,6 @@ if [ -n "${XDG_CONFIG_HOME}" ]; then
     cachedir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
 
-if [ -n "$is_cmd_kitten" ]; then
-    if [ ! "$(kitten icat --detect-support 2>&1)" ]; then
-        echo "kitty icat unsupported"
-        exit 1
-    fi
-fi
-
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
 is_sixel_support_get () {
@@ -66,7 +61,7 @@ while getopts "hc" opt; do
         exit 0;;
   esac
 done
-shift $(("$OPTIND" - 1))
+shift $(($OPTIND - 1))
 
 regex() {
     # Usage: regex "string" "regex"
@@ -146,7 +141,7 @@ paint () {
             "$img_path" sixel:-
 
         echo ""
-    elif [[ -n "$is_cmd_kitten" ]]; then
+    elif [[ -n "$is_cmd_kitten_icat_support" ]]; then
         # kitten does not provide a 'geometry' option
         # so image must have been preprocessed to fit desired geometry
         kitten icat --align left "$img_path"
