@@ -168,7 +168,6 @@ wh_start_get () {
     [[ -z "$w" ]] && w="1000"
     [[ -z "$h" ]] && h="$w"
 
-    
     echo "$((${w} * ${w_mul})) $((${h} * ${h_mul}))"
 }
 
@@ -210,6 +209,22 @@ wh_scaled_get () {
     fi
 
     echo "$fin_w $fin_h"
+}
+
+# https://man.freebsd.org/cgi/man.cgi?query=xterm
+#
+# maxGraphicSize (class MaxGraphicSize)
+#  If xterm is configured to support ReGIS or SIXEL graphics, this
+#  resource controls the maximum size  of a graph which	can be
+#  displayed.
+#
+#  The default is "1000x1000" (given as width by height).
+wh_term_scaled_get () {
+    if [[ $TERM =~ xterm ]]; then
+        echo $(wh_scaled_get "$1" "1000 1000")
+    else
+        echo "$1"
+    fi
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
@@ -472,6 +487,7 @@ show_font () {
 start () {
     path=$1
     start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
+    start_wh=$(wh_term_scaled_get "$start_wh")
 
     if [ -n "$cache" ]; then
         cachedir_calibrate "$cachedir"
