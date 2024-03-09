@@ -145,6 +145,8 @@ paint () {
         # kitten does not provide a 'geometry' option
         # so image must have been preprocessed to fit desired geometry
         kitten icat --align left "$img_path"
+    else
+        echo "image display is not supported"
     fi
 }
 
