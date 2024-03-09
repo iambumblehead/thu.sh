@@ -7,6 +7,8 @@
 # ./render-thumb-for.sh /path/to/file.mp4 1020 780
 
 is_cmd_kitten=$(command -v kitten)
+[ $(command -v kitten) ] &&
+    is_cmd_kitten_icat_support=$(kitten icat --detect-support 2>&1)
 is_cmd_mutool=$(command -v mutool)
 is_cmd_pdftoppm=$(command -v pdftoppm)
 is_cmd_convert=$(command -v convert)
@@ -33,12 +35,6 @@ hrefattr_re="href=['\"]([^'\"]*)['\"]"
 cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
     cachedir="$XDG_CONFIG_HOME/render-thumb-for"
-fi
-
-if [ -n "$is_cmd_kitten" ]; then
-    if [ "$(kitten icat --detect-support 2>&1)" ]; then
-        is_cmd_kitten_icat_support=true
-    fi
 fi
 
 # thank you @topcat001
