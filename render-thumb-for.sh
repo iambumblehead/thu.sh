@@ -221,7 +221,7 @@ wh_scaled_get () {
 #  The default is "1000x1000" (given as width by height).
 wh_term_scaled_get () {
     if [[ $TERM =~ xterm ]]; then
-        "$(wh_scaled_get "$1" "1000 1000")"
+        wh_scaled_get "$1" "1000 1000"
     else
         echo "$1"
     fi
