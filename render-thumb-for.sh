@@ -221,7 +221,7 @@ wh_scaled_get () {
 #  The default is "1000x1000" (given as width by height).
 wh_term_xterm_max_get () {
     if [[ -n $maxGraphicSize ]] && [[ $maxGraphicSize =~ $wxhstr_re ]]; then
-        echo "${maxGraphicSize/x/0 }"
+        echo "${maxGraphicSize/x/ }"
     else
         echo "1000 1000"
     fi
