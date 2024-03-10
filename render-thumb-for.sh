@@ -30,7 +30,7 @@ resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
-#wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
+wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
 
 cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
@@ -219,9 +219,17 @@ wh_scaled_get () {
 #  displayed.
 #
 #  The default is "1000x1000" (given as width by height).
+wh_term_xterm_max_get () {
+    if [[ -n $maxGraphicSize ]] && [[ $maxGraphicSize =~ $wxhstr_re ]]; then
+        echo "${maxGraphicSize/x/0 }"
+    else
+        echo "1000 1000"
+    fi
+}
+
 wh_term_scaled_get () {
     if [[ $TERM =~ xterm ]]; then
-        wh_scaled_get "$1" "1000 1000"
+        wh_scaled_get "$1" "$(wh_term_xterm_max_get)"
     else
         echo "$1"
     fi
