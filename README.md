@@ -29,7 +29,7 @@ render-thumb-for.sh /path/to/book.epub
 <dl>
   <dt>Which terminal emulators will render images?</dt>
   <dd>`iTerm2`, `kitty` and `foot` can render images with this script. Sixel support for other terminals is listed here https://www.arewesixelyet.com/</dd>
-  <dd>`xterm` is not supported, but can be configured to work with this script. Please see https://github.com/iambumblehead/render-thumb-for.sh/pull/25</dd>
+  <dd>`xterm` can be configured, see https://github.com/iambumblehead/render-thumb-for.sh/wiki#with-xterm</dd>
   <dt>Anything else?</dt>
   <dd>Suggestions and improvements are welcome and appreciated. `render-thumb-for.sh` may feel "slow" as it presently does not yet cache or reuse preview images it generates.</dd>
 </dl>
