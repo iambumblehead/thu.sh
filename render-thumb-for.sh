@@ -221,7 +221,10 @@ wh_scaled_get () {
 # https://github.com/dylanaraps/pure-bash-bible
 #  ?tab=readme-ov-file#get-the-terminal-size-in-lines-and-columns-from-a-script
 wh_term_rowscolumns_get () {
-    stty size
+    # (:;:) is a micro sleep to ensure the variables are
+    # exported immediately.
+    shopt -s checkwinsize; (:;:)
+    printf '%s\n' "$(tput lines) $(tput cols) "
 }
 
 # https://github.com/dylanaraps/pure-bash-bible
