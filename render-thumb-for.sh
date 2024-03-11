@@ -233,7 +233,7 @@ wh_term_rowscolumns_get () {
 wh_term_resolution_get () {
     # Usage: wh_term_resolution_get
     cmd=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
-    IFS=";t" read -d "t" -sra term_size -t "$timeoutss" -p $cmd >&2
+    IFS=$";\t" read -d t -sra term_size -t "$timeoutss" -p $cmd >&2
     printf '%s\n' "${term_size[1]} ${term_size[2]}"
 }
 
