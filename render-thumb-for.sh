@@ -244,8 +244,8 @@ wh_term_resolution_get () {
 wh_fromrowscols_get () {
     colw="$1"
     rowh="$2"
-    IFS=" " read -r -a termwh <<< $(wh_term_resolution_get)
-    IFS=" " read -r -a termrc <<< $(wh_term_rowscolumns_get)
+    IFS=" " read -r -a termwh <<< "$(wh_term_resolution_get)"
+    IFS=" " read -r -a termrc <<< "$(wh_term_rowscolumns_get)"
 
     if [[ -n "$colw" ]]; then
         # shellcheck disable=SC2323
