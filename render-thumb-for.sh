@@ -233,7 +233,7 @@ wh_term_rowscolumns_get () {
 wh_term_resolution_get () {
     # Usage: wh_term_resolution_get
     cmd=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
-    IFS=";t" read -d t -sra term_size -t 2 -p $cmd >&2
+    IFS=";t" read -d "t" -sra term_size -t "$timeoutss" -p $cmd >&2
     printf '%s\n' "${term_size[1]} ${term_size[2]}"
 }
 
@@ -242,18 +242,20 @@ wh_term_resolution_get () {
 # to avoid rounding issues that may result io too-small numbers,
 # resolution is calculated from the full set of columns and rows
 wh_fromrowscols_get () {
-    colw=$1
-    rowh=$2
+    colw="$1"
+    rowh="$2"
     IFS=" " read -r -a termwh <<< $(wh_term_resolution_get)
     IFS=" " read -r -a termrc <<< $(wh_term_rowscolumns_get)
 
     if [[ -n "$colw" ]]; then
+        # shellcheck disable=SC2323
         pixelw=$((((((${termwh[0]} * 100) / ${termrc[0]}) * $colw) / 100)))
     else
         pixelw="$defaultw"
     fi
 
     if [[ -n "$rowh" ]]; then
+        # shellcheck disable=SC2323
         pixelh=$((((((${termwh[1]} * 100) / ${termrc[1]}) * $rowh) / 100)))
     else
         pixelh="$pixelw"
