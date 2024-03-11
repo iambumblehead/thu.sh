@@ -52,14 +52,21 @@ is_sixel_support_get () {
 }
 is_sixel_support=$(is_sixel_support_get)
 
+cells=
 cache="true" # getopts hcm: would force 'm' to have params
-while getopts "hc" opt; do
-  case "${opt}" in
-    c) cache="true";;
-    h|*) # Display help.
-        echo "-c to configure cache ex, -c true"
-        exit 0;;
-  esac
+timeoutss=1.2
+defaultw=1000
+while getopts "phc" opt; do
+    case "${opt}" in
+        c) cells="true";; # use cell dimensions
+        s) cache="true";; # use a cache
+        t) timeoutss="${OPTARG}";; # use custom timeout, eg 2.5
+        h|*) # Display help.
+            echo "-s to configure cache ex, -s true"
+            echo "-c to use row and height aas cell units"
+            echo "-t to use custom timeout (seconds) w/ shell query functions"
+            exit 0;;
+    esac
 done
 shift $(($OPTIND - 1))
 
@@ -165,7 +172,7 @@ wh_start_get () {
     w_mul=$([ -n "$3" ] && echo "$3" || echo "1")
     h_mul=$([ -n "$4" ] && echo "$4" || echo "1")
 
-    [[ -z "$w" ]] && w="1000"
+    [[ -z "$w" ]] && w="$defaultw"
     [[ -z "$h" ]] && h="$w"
 
     echo "$((${w} * ${w_mul})) $((${h} * ${h_mul}))"
@@ -209,6 +216,46 @@ wh_scaled_get () {
     fi
 
     echo "$fin_w $fin_h"
+}
+
+# https://github.com/dylanaraps/pure-bash-bible
+#  ?tab=readme-ov-file#get-the-terminal-size-in-lines-and-columns-from-a-script
+wh_term_rowscolumns_get () {
+    stty size
+}
+
+# https://github.com/dylanaraps/pure-bash-bible
+#  ?tab=readme-ov-file#get-the-terminal-size-in-pixels
+wh_term_resolution_get () {
+    # Usage: wh_term_resolution_get
+    cmd=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
+    IFS=";t" read -d t -sra term_size -t 2 -p $cmd >&2
+    printf '%s\n' "${term_size[1]} ${term_size[2]}"
+}
+
+# get the width and height in pixels from columns and rows
+#
+# to avoid rounding issues that may result io too-small numbers,
+# resolution is calculated from the full set of columns and rows
+wh_fromrowscols_get () {
+    colw=$1
+    rowh=$2
+    IFS=" " read -r -a termwh <<< $(wh_term_resolution_get)
+    IFS=" " read -r -a termrc <<< $(wh_term_rowscolumns_get)
+
+    if [[ -n "$colw" ]]; then
+        pixelw=$((((((${termwh[0]} * 100) / ${termrc[0]}) * $colw) / 100)))
+    else
+        pixelw="$defaultw"
+    fi
+
+    if [[ -n "$rowh" ]]; then
+        pixelh=$((((((${termwh[1]} * 100) / ${termrc[1]}) * $rowh) / 100)))
+    else
+        pixelh="$pixelw"
+    fi    
+
+    echo "$pixelw $pixelh"
 }
 
 # https://man.freebsd.org/cgi/man.cgi?query=xterm
@@ -494,7 +541,11 @@ show_font () {
 
 start () {
     path=$1
-    start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
+    if [ -n "$cells" ]; then
+        start_wh=$(wh_fromrowscols_get "$2" "$3")
+    else
+        start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
+    fi
     start_wh=$(wh_term_scaled_get "$start_wh")
 
     if [ -n "$cache" ]; then
