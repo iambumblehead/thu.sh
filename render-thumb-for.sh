@@ -30,7 +30,7 @@ resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
-#wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
+wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
 
 cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
@@ -145,6 +145,8 @@ paint () {
         # kitten does not provide a 'geometry' option
         # so image must have been preprocessed to fit desired geometry
         kitten icat --align left "$img_path"
+    else
+        echo "image display is not supported"
     fi
 }
 
@@ -166,7 +168,6 @@ wh_start_get () {
     [[ -z "$w" ]] && w="1000"
     [[ -z "$h" ]] && h="$w"
 
-    
     echo "$((${w} * ${w_mul})) $((${h} * ${h_mul}))"
 }
 
@@ -208,6 +209,30 @@ wh_scaled_get () {
     fi
 
     echo "$fin_w $fin_h"
+}
+
+# https://man.freebsd.org/cgi/man.cgi?query=xterm
+#
+# maxGraphicSize (class MaxGraphicSize)
+#  If xterm is configured to support ReGIS or SIXEL graphics, this
+#  resource controls the maximum size  of a graph which	can be
+#  displayed.
+#
+#  The default is "1000x1000" (given as width by height).
+wh_term_xterm_max_get () {
+    if [[ -n $maxGraphicSize ]] && [[ $maxGraphicSize =~ $wxhstr_re ]]; then
+        echo "${maxGraphicSize/x/ }"
+    else
+        echo "1000 1000"
+    fi
+}
+
+wh_term_scaled_get () {
+    if [[ $TERM =~ xterm ]]; then
+        wh_scaled_get "$1" "$(wh_term_xterm_max_get)"
+    else
+        echo "$1"
+    fi
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
@@ -470,6 +495,7 @@ show_font () {
 start () {
     path=$1
     start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
+    start_wh=$(wh_term_scaled_get "$start_wh")
 
     if [ -n "$cache" ]; then
         cachedir_calibrate "$cachedir"

@@ -1,5 +1,7 @@
 # changelog
 
+ * 0.0.7 _Mar.09.2024_
+   * improve [support for xterm](https://github.com/iambumblehead/render-thumb-for.sh/pull/25)
  * 0.0.6 _Mar.07.2024_
    * added sixel and kitty [differentiation to README](https://github.com/iambumblehead/render-thumb-for.sh/pull/16)
    * added [sixel detection](https://github.com/iambumblehead/render-thumb-for.sh/pull/17)
