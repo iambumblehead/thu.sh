@@ -56,7 +56,7 @@ cells=
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
 defaultw=1000
-while getopts "phc" opt; do
+while getopts "csth" opt; do
     case "${opt}" in
         c) cells="true";; # use cell dimensions
         s) cache="true";; # use a cache
@@ -229,6 +229,7 @@ wh_term_rowscolumns_get () {
 
 # https://github.com/dylanaraps/pure-bash-bible
 #  ?tab=readme-ov-file#get-the-terminal-size-in-pixels
+# shellcheck disable=SC2154
 wh_term_resolution_get () {
     # Usage: wh_term_resolution_get
     cmd=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
