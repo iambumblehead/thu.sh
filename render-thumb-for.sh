@@ -25,12 +25,27 @@ mimeTypeFONT="font"
 mimeTypeEPUB="epub"
 mimeTypePDF="pdf"
 
+# escape sequences used to query the terminal for details,
+#   https://www.mankier.com/7/foot-ctlseqs
+#   https://iterm2.com/documentation-escape-codes.html
+#   https://github.com/dylanaraps/pure-bash-bible
+#     ?tab=readme-ov-file#get-the-terminal-size-in-pixels
+escXTERMsixelissupported=$(printf '%b' "\e[c")
+escXTERMtermsize=$(printf '%b' "\e[14;2t")
+#escXTERMtermsize=$(printf '%b' "\e[15t")
+escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
+
+msgUnsupportedDisplay="image display is not supported"
+msgUnsupportedMime="mime type is not supported"
+msgUnknownWinSize="window size is unknown and could not be detected"
+
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
 resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
 wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
+number_re="^[[:digit:]]*$"
 
 cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
@@ -42,8 +57,8 @@ fi
 is_sixel_support_get () {
     support=(0)
 
-    IFS=";" read -r -a support -s -d "c" -p $'\e[c' >&2
-    for code in "${support[@]}"; do
+    IFS=";" read -r -a REPLY -s -d "c" -p "$escXTERMsixelissupported" >&2
+    for code in "${REPLY[@]}"; do
         if [[ $code == 4 ]]; then
             echo "true"
             exit 1
@@ -131,7 +146,8 @@ file_type_get () {
     elif [[ $mime =~ ^"application/epub" ]]; then
         echo "$mimeTypeEPUB"
     else
-        echo "unsupported"
+        echo "$msgUnsupportedMime"
+        exit 1
     fi
 }
 
@@ -153,7 +169,7 @@ paint () {
         # so image must have been preprocessed to fit desired geometry
         kitten icat --align left "$img_path"
     else
-        echo "image display is not supported"
+        echo "$msgUnsupportedDisplay"
     fi
 }
 
@@ -220,21 +236,30 @@ wh_scaled_get () {
 
 # https://github.com/dylanaraps/pure-bash-bible
 #  ?tab=readme-ov-file#get-the-terminal-size-in-lines-and-columns-from-a-script
-wh_term_rowscolumns_get () {
+wh_term_columnsrows_get () {
     # (:;:) is a micro sleep to ensure the variables are
     # exported immediately.
     shopt -s checkwinsize; (:;:)
-    printf '%s\n' "$(tput lines) $(tput cols) "
+    printf '%s\n' "$(tput cols) $(tput lines)"
 }
 
-# https://github.com/dylanaraps/pure-bash-bible
-#  ?tab=readme-ov-file#get-the-terminal-size-in-pixels
-# shellcheck disable=SC2154
 wh_term_resolution_get () {
-    # Usage: wh_term_resolution_get
-    cmd=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
-    IFS=$';\t' read -d t -sra term_size -t "$timeoutss" -p "$cmd" >&2
-    printf '%s\n' "${term_size[1]} ${term_size[2]}"
+    esc="$escXTERMtermsize"
+    IFS=";" read -d t -sa REPLY -t ${timeoutss} -p "$esc" >&2
+    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+        printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+        exit 0
+    fi
+
+    esc="$escXTERMtermsizeTMUX"
+    IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+        printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+        exit 0
+    fi
+
+    echo "$msgUnknownWinSize"
+    exit 1
 }
 
 # get the width and height in pixels from columns and rows
@@ -245,18 +270,16 @@ wh_fromrowscols_get () {
     colw="$1"
     rowh="$2"
     IFS=" " read -r -a termwh <<< "$(wh_term_resolution_get)"
-    IFS=" " read -r -a termrc <<< "$(wh_term_rowscolumns_get)"
+    IFS=" " read -r -a termcr <<< "$(wh_term_columnsrows_get)"
 
     if [[ -n "$colw" ]]; then
-        # shellcheck disable=SC2323
-        pixelw=$((((((${termwh[0]} * 100) / ${termrc[0]}) * $colw) / 100)))
+        pixelw=$(((((${termwh[0]} * 100) / ${termcr[0]} * $colw) / 100)))
     else
         pixelw="$defaultw"
     fi
 
     if [[ -n "$rowh" ]]; then
-        # shellcheck disable=SC2323
-        pixelh=$((((((${termwh[1]} * 100) / ${termrc[1]}) * $rowh) / 100)))
+        pixelh=$(((((${termwh[1]} * 100) / ${termcr[1]} * $rowh) / 100)))
     else
         pixelh="$pixelw"
     fi    
