@@ -271,13 +271,15 @@ wh_fromrowscols_get () {
     IFS=" " read -r -a termcr <<< "$(wh_term_columnsrows_get)"
 
     if [[ -n "$colw" ]]; then
-        pixelw=$(((((${termwh[0]} * 100) / ${termcr[0]} * $colw) / 100)))
+        # shellcheck disable=SC2323
+        pixelw=$((((((${termwh[0]} * 100) / ${termcr[0]}) * $colw) / 100)))
     else
         pixelw="$defaultw"
     fi
 
     if [[ -n "$rowh" ]]; then
-        pixelh=$(((((${termwh[1]} * 100) / ${termcr[1]} * $rowh) / 100)))
+        # shellcheck disable=SC2323
+        pixelh=$((((((${termwh[1]} * 100) / ${termcr[1]}) * $rowh) / 100)))
     else
         pixelh="$pixelw"
     fi    
