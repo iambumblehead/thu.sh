@@ -54,29 +54,44 @@ fi
 
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
-is_sixel_support_get () {
-    IFS=";" read -r -a REPLY -s -d "c" -p "$escXTERMsixelissupported" >&2
+escquery_sixel_issupport_get () {
+    esc="$escXTERMsixelissupported"
+    if [[ -n nested ]]; then
+        echo -e "$esc" > /dev/tty
+        IFS=";" read -d "c" -sra REPLY < /dev/tty
+        for code in "${REPLY[@]}"; do
+            if [[ $code == 4 ]]; then
+                printf '%s\n' "true"
+                exit 1
+            fi
+        done
+    fi
+
+    IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
     for code in "${REPLY[@]}"; do
         if [[ $code == 4 ]]; then
-            echo "true"
+            printf '%s\n' "true"
             exit 1
         fi
     done
 }
-is_sixel_support=$(is_sixel_support_get)
+is_sixel_support=$(escquery_sixel_issupport_get)
 
 cells=
+nested=
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
 defaultw=1000
-while getopts "csth" opt; do
+while getopts "cnsth" opt; do
     case "${opt}" in
         c) cells="true";; # use cell dimensions
+        n) nested="true";; # nested in ncurses, send esc queries to tty
         s) cache="true";; # use a cache
         t) timeoutss="${OPTARG}";; # use custom timeout, eg 2.5
         h|*) # Display help.
+            echo "-c to use row and height as cell units"
+            echo "-n to declare ncurses nested, send escape queries to tty"
             echo "-s to configure cache ex, -s true"
-            echo "-c to use row and height aas cell units"
             echo "-t to use custom timeout (seconds) w/ shell query functions"
             exit 0;;
     esac
@@ -243,6 +258,15 @@ wh_term_columnsrows_get () {
 
 wh_term_resolution_get () {
     esc="$escXTERMtermsize"
+    if [[ -n nested ]]; then
+        echo -e "$esc" > /dev/tty
+        IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+        if [[ "${REPLY[1]}" =~ $number_re ]]; then
+            printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+            exit 0
+        fi
+    fi
+
     IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
         printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
@@ -250,6 +274,15 @@ wh_term_resolution_get () {
     fi
 
     esc="$escXTERMtermsizeTMUX"
+    if [[ -n nested ]]; then
+        echo -e '\e[14t' > /dev/tty
+        IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+        if [[ "${REPLY[1]}" =~ $number_re ]]; then
+            printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+            exit 0
+        fi
+    fi
+
     IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
         printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
