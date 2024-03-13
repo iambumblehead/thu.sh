@@ -55,8 +55,6 @@ fi
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
 is_sixel_support_get () {
-    support=(0)
-
     IFS=";" read -r -a REPLY -s -d "c" -p "$escXTERMsixelissupported" >&2
     for code in "${REPLY[@]}"; do
         if [[ $code == 4 ]]; then
@@ -245,7 +243,7 @@ wh_term_columnsrows_get () {
 
 wh_term_resolution_get () {
     esc="$escXTERMtermsize"
-    IFS=";" read -d t -sa REPLY -t ${timeoutss} -p "$esc" >&2
+    IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
         printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
         exit 0
