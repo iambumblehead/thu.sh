@@ -52,31 +52,6 @@ if [ -n "${XDG_CONFIG_HOME}" ]; then
     cachedir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
 
-# thank you @topcat001
-# https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
-escquery_sixel_issupport_get () {
-    esc="$escXTERMsixelissupported"
-    if [[ -n nested ]]; then
-        echo -e "$esc" > /dev/tty
-        IFS=";" read -d "c" -sra REPLY < /dev/tty
-        for code in "${REPLY[@]}"; do
-            if [[ $code == 4 ]]; then
-                printf '%s\n' "true"
-                exit 1
-            fi
-        done
-    fi
-
-    IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
-    for code in "${REPLY[@]}"; do
-        if [[ $code == 4 ]]; then
-            printf '%s\n' "true"
-            exit 1
-        fi
-    done
-}
-is_sixel_support=$(escquery_sixel_issupport_get)
-
 cells=
 nested=
 cache="true" # getopts hcm: would force 'm' to have params
@@ -97,6 +72,31 @@ while getopts "cnsth" opt; do
     esac
 done
 shift $(($OPTIND - 1))
+
+# thank you @topcat001
+# https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
+escquery_sixel_issupport_get () {
+    esc="$escXTERMsixelissupported"
+    if [[ -n "$nested" ]]; then
+        echo -e "$esc" > /dev/tty
+        IFS=";" read -d "c" -sra REPLY < /dev/tty
+        for code in "${REPLY[@]}"; do
+            if [[ $code == 4 ]]; then
+                printf '%s\n' "true"
+                exit 1
+            fi
+        done
+    fi
+
+    IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
+    for code in "${REPLY[@]}"; do
+        if [[ $code == 4 ]]; then
+            printf '%s\n' "true"
+            exit 1
+        fi
+    done
+}
+is_sixel_support=$(escquery_sixel_issupport_get)
 
 regex() {
     # Usage: regex "string" "regex"
@@ -258,7 +258,7 @@ wh_term_columnsrows_get () {
 
 wh_term_resolution_get () {
     esc="$escXTERMtermsize"
-    if [[ -n nested ]]; then
+    if [[ -n "$nested" ]]; then
         echo -e "$esc" > /dev/tty
         IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
         if [[ "${REPLY[1]}" =~ $number_re ]]; then
@@ -274,7 +274,7 @@ wh_term_resolution_get () {
     fi
 
     esc="$escXTERMtermsizeTMUX"
-    if [[ -n nested ]]; then
+    if [[ -n "$nested" ]]; then
         echo -e '\e[14t' > /dev/tty
         IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" < /dev/tty
         if [[ "${REPLY[1]}" =~ $number_re ]]; then
