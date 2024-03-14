@@ -13,5 +13,6 @@ test_wh_scaled_get_scales_down_larger_dimensions () {
 }
 
 setup_suite() {
-  source ../render-thumb-for.sh
+    # shellcheck source=../render-thumb-for.sh
+    source ../render-thumb-for.sh
 }
