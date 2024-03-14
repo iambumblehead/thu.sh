@@ -6,6 +6,7 @@
    * migrate [from convert command to magick](https://github.com/iambumblehead/render-thumb-for.sh/pull/26), per [advice here](https://github.com/ImageMagick/ImageMagick/discussions/7168) (maybe both 'convert' and 'magick' should be supported?)
    * support [pdf images with imagemagick](https://github.com/iambumblehead/render-thumb-for.sh/pull/26)
    * added [support for zoom param, eg -z 3](https://github.com/iambumblehead/render-thumb-for.sh/pull/26), used for foot <= 1.16.2, see [link](https://codeberg.org/dnkl/foot/issues/1643)
+   * added bash_unit [unit test and pipeline](https://github.com/iambumblehead/render-thumb-for.sh/pull/30)
  * 0.0.6 _Mar.07.2024_
    * added sixel and kitty [differentiation to README](https://github.com/iambumblehead/render-thumb-for.sh/pull/16)
    * added [sixel detection](https://github.com/iambumblehead/render-thumb-for.sh/pull/17)
