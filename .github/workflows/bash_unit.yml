@@ -1,0 +1,13 @@
+name: bash_unit CI
+on:
+  push:
+
+jobs:
+  ubuntu:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    - name: Unit testing with bash_unit
+      run: |
+        bash <(curl -s https://raw.githubusercontent.com/pgrange/bash_unit/master/install.sh)
+        FORCE_COLOR=true ./bash_unit test/test*
