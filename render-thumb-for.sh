@@ -85,22 +85,18 @@ shift $(($OPTIND - 1))
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
 escquery_sixel_issupport_get () {
     esc="$escXTERMsixelissupported"
-    if [[ -z "$is_stdout_ready" ]]; then
+
+    if [[ -n "$is_stdout_ready" ]]; then
+        IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
+    else
         echo -e "$esc" > /dev/tty
         IFS=";" read -d "c" -sra REPLY < /dev/tty
-        for code in "${REPLY[@]}"; do
-            if [[ $code == 4 ]]; then
-                printf '%s\n' "true"
-                exit 1
-            fi
-        done
     fi
 
-    IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
     for code in "${REPLY[@]}"; do
         if [[ $code == 4 ]]; then
             printf '%s\n' "true"
-            exit 1
+            exit 0
         fi
     done
 }
@@ -266,32 +262,26 @@ wh_term_columnsrows_get () {
 
 wh_term_resolution_get () {
     esc="$escXTERMtermsize"
-    if [[ -z "$is_stdout_ready" ]]; then
+    if [[ -n "$is_stdout_ready" ]]; then
+        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    else
         echo -e "$esc" > /dev/tty
         IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
-        if [[ "${REPLY[1]}" =~ $number_re ]]; then
-            printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
-            exit 0
-        fi
     fi
 
-    IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
         printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
         exit 0
     fi
 
     esc="$escXTERMtermsizeTMUX"
-    if [[ -z "$is_stdout_ready" ]]; then
+    if [[ -n "$is_stdout_ready" ]]; then
+        IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    else
         echo -e '\e[14t' > /dev/tty
         IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" < /dev/tty
-        if [[ "${REPLY[1]}" =~ $number_re ]]; then
-            printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
-            exit 0
-        fi
     fi
 
-    IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
         printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
         exit 0
