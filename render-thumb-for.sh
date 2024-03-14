@@ -60,7 +60,7 @@ zoom=1
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
 defaultw=1000
-version=0.0.7
+version=0.0.8
 while getopts "cnstz:vh" opt; do
     case "${opt}" in
         c) cells="true";; # use cell dimensions
@@ -635,4 +635,10 @@ start () {
         *)
     esac
 }
-start "$@"
+
+# do not run main when sourcing the script
+if [[ "$0" == "${BASH_SOURCE[0]}" ]]; then
+    start "$@"
+else
+    true
+fi
