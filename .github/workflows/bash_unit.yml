@@ -1,6 +1,9 @@
-name: bash_unit CI
+name: test bash_unit
 on:
   push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   ubuntu:
@@ -10,4 +13,4 @@ jobs:
     - name: Unit testing with bash_unit
       run: |
         bash <(curl -s https://raw.githubusercontent.com/pgrange/bash_unit/master/install.sh)
-        FORCE_COLOR=true ./bash_unit test/test*
+        FORCE_COLOR=true ./bash_unit ./test/test*
