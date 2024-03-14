@@ -1,17 +1,21 @@
 <h3 align="center"><img src="./test/render-for.demo.gif" alt="demo" height="400px"></h3>
-<p align="center"><code>render-thumb-for.sh</code> renders preview images to the terminal; ~500 LOC bash</p>
+<p align="center"><code>render-thumb-for.sh</code> renders preview images to the terminal; ~800 LOC bash</p>
 <p align="center">
 <a href="https://github.com/iambumblehead/render-thumb-for.sh/workflows"><img src="https://github.com/iambumblehead/render-thumb-for.sh/workflows/shellcheck/badge.svg"></a>
 <a href="./LICENSE.md"><img src="https://img.shields.io/badge/license-ISC-blue.svg"></a>
 <a href="https://github.com/iambumblehead/render-thumb-for.sh/releases"><img src="https://img.shields.io/github/release/iambumblehead/render-thumb-for.sh.svg"></a>
 </p>
 
-**render-thumb-for.sh renders images for various file types to the terminal.** It renders images from audio, font, video, pdf, epub, svg and other files --supporting both kitty and sixel formats. It detects available commands from the system and has a small dependency tree,
- * `imagemagick` (sixel) or `kitten icat` (kitty),
- * `ffmpeg` (video, audio),
- * `unzip` (epub),
- * `pdftoppm` or `mutool` (pdf),
- * `exiftool` or `identify` (probe file properties).
+> [!WARNING]
+> This project has no major releases and sources will change suddenly any time. No unit tests at this time.
+
+**render-thumb-for.sh renders images for various file types to the terminal.** It renders images from audio, font, video, pdf, epub, svg and other files --supporting both kitty and sixel formats. It detects available commands from the system for a small dependency tree,
+ * `magick` sixel or `kitten icat` display,
+ * `mutool`, `pdftoppm` or `magick` pdf,
+ * `ffmpeg` video audio,
+ * `magick` font,
+ * `unzip` epub,
+ * `exiftool` or `identify` file type
 
 
 ```bash

@@ -11,7 +11,7 @@ is_cmd_kitten=$(command -v kitten)
     is_cmd_kitten_icat_support=$(kitten icat --detect-support 2>&1)
 is_cmd_mutool=$(command -v mutool)
 is_cmd_pdftoppm=$(command -v pdftoppm)
-is_cmd_convert=$(command -v convert)
+is_cmd_magick=$(command -v magick)
 is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
@@ -25,43 +25,81 @@ mimeTypeFONT="font"
 mimeTypeEPUB="epub"
 mimeTypePDF="pdf"
 
+# escape sequences used to query the terminal for details,
+#   https://www.mankier.com/7/foot-ctlseqs
+#   https://iterm2.com/documentation-escape-codes.html
+#   https://github.com/dylanaraps/pure-bash-bible
+#     ?tab=readme-ov-file#get-the-terminal-size-in-pixels
+escXTERMsixelissupported=$(printf '%b' "\e[c")
+escXTERMtermsize=$(printf '%b' "\e[14t")
+#escXTERMcellsize=$(printf '%b' "\e[16t")
+escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
+
+msgUnsupportedDisplay="image display is not supported"
+msgUnsupportedMime="mime type is not supported"
+msgUnknownWinSize="window size is unknown and could not be detected"
+
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
 resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
 wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
+number_re="^[[:digit:]]*$"
 
 cachedir="$HOME/.config/render-thumb-for"
 if [ -n "${XDG_CONFIG_HOME}" ]; then
     cachedir="$XDG_CONFIG_HOME/render-thumb-for"
 fi
 
+cells=
+nested=
+zoom=1
+cache="true" # getopts hcm: would force 'm' to have params
+timeoutss=1.2
+defaultw=1000
+while getopts "cnstz:h" opt; do
+    case "${opt}" in
+        c) cells="true";; # use cell dimensions
+        n) nested="true";; # nested in ncurses, send esc queries to tty
+        s) cache="true";; # use a cache
+        t) timeoutss="${OPTARG}";; # use custom timeout, eg 2.5
+        z) zoom="${OPTARG}";; # for foot <= 1.16.2, use custom zoom factor, eg 2
+        h|*) # Display help.
+            echo "-c use row and height as cell units"
+            echo "-n declare ncurses nested, send escape queries to tty"
+            echo "-s configure cache ex, -s true"
+            echo "-t use custom timeout (seconds) w/ shell query functions"
+            echo "-z configure zoom. affects calculated view area size ex, 2"
+            exit 0;;
+    esac
+done
+shift $(($OPTIND - 1))
+
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
-is_sixel_support_get () {
-    support=(0)
+escquery_sixel_issupport_get () {
+    esc="$escXTERMsixelissupported"
+    if [[ -n "$nested" ]]; then
+        echo -e "$esc" > /dev/tty
+        IFS=";" read -d "c" -sra REPLY < /dev/tty
+        for code in "${REPLY[@]}"; do
+            if [[ $code == 4 ]]; then
+                printf '%s\n' "true"
+                exit 1
+            fi
+        done
+    fi
 
-    IFS=";" read -r -a support -s -d "c" -p $'\e[c' >&2
-    for code in "${support[@]}"; do
+    IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
+    for code in "${REPLY[@]}"; do
         if [[ $code == 4 ]]; then
-            echo "true"
+            printf '%s\n' "true"
             exit 1
         fi
     done
 }
-is_sixel_support=$(is_sixel_support_get)
-
-cache="true" # getopts hcm: would force 'm' to have params
-while getopts "hc" opt; do
-  case "${opt}" in
-    c) cache="true";;
-    h|*) # Display help.
-        echo "-c to configure cache ex, -c true"
-        exit 0;;
-  esac
-done
-shift $(($OPTIND - 1))
+is_sixel_support=$(escquery_sixel_issupport_get)
 
 regex() {
     # Usage: regex "string" "regex"
@@ -124,7 +162,8 @@ file_type_get () {
     elif [[ $mime =~ ^"application/epub" ]]; then
         echo "$mimeTypeEPUB"
     else
-        echo "unsupported"
+        echo "$msgUnsupportedMime"
+        exit 1
     fi
 }
 
@@ -134,11 +173,11 @@ paint () {
 
     if [[ -n "$is_sixel_support" ]]; then
         export MAGICK_OCL_DEVICE=true
-        convert \
-            -channel rgba \
+        magick \
             -background "rgba(0,0,0,0)" \
+            "$img_path" \
             -geometry "${img_wh/ /x}" \
-            "$img_path" sixel:-
+            sixel:-
 
         echo ""
     elif [[ -n "$is_cmd_kitten_icat_support" ]]; then
@@ -146,7 +185,7 @@ paint () {
         # so image must have been preprocessed to fit desired geometry
         kitten icat --align left "$img_path"
     else
-        echo "image display is not supported"
+        echo "$msgUnsupportedDisplay"
     fi
 }
 
@@ -165,7 +204,7 @@ wh_start_get () {
     w_mul=$([ -n "$3" ] && echo "$3" || echo "1")
     h_mul=$([ -n "$4" ] && echo "$4" || echo "1")
 
-    [[ -z "$w" ]] && w="1000"
+    [[ -z "$w" ]] && w="$defaultw"
     [[ -z "$h" ]] && h="$w"
 
     echo "$((${w} * ${w_mul})) $((${h} * ${h_mul}))"
@@ -209,6 +248,79 @@ wh_scaled_get () {
     fi
 
     echo "$fin_w $fin_h"
+}
+
+# https://github.com/dylanaraps/pure-bash-bible
+#  ?tab=readme-ov-file#get-the-terminal-size-in-lines-and-columns-from-a-script
+wh_term_columnsrows_get () {
+    # (:;:) is a micro sleep to ensure the variables are
+    # exported immediately.
+    shopt -s checkwinsize; (:;:)
+    printf '%s\n' "$(tput cols) $(tput lines)"
+}
+
+wh_term_resolution_get () {
+    esc="$escXTERMtermsize"
+    if [[ -n "$nested" ]]; then
+        echo -e "$esc" > /dev/tty
+        IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+        if [[ "${REPLY[1]}" =~ $number_re ]]; then
+            printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+            exit 0
+        fi
+    fi
+
+    IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+        printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+        exit 0
+    fi
+
+    esc="$escXTERMtermsizeTMUX"
+    if [[ -n "$nested" ]]; then
+        echo -e '\e[14t' > /dev/tty
+        IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+        if [[ "${REPLY[1]}" =~ $number_re ]]; then
+            printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+            exit 0
+        fi
+    fi
+
+    IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+        printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+        exit 0
+    fi
+
+    echo "$msgUnknownWinSize"
+    exit 1
+}
+
+# get the width and height in pixels from columns and rows
+#
+# to avoid rounding issues that may result io too-small numbers,
+# resolution is calculated from the full set of columns and rows
+wh_fromrowscols_get () {
+    colw="$1"
+    rowh="$2"
+    IFS=" " read -r -a termwh <<< "$(wh_term_resolution_get)"
+    IFS=" " read -r -a termcr <<< "$(wh_term_columnsrows_get)"
+
+    if [[ -n "$colw" ]]; then
+        # shellcheck disable=SC2323
+        pixelw=$((((((${termwh[0]} * 100) / ${termcr[0]}) * $colw) / 100)))
+    else
+        pixelw="$defaultw"
+    fi
+
+    if [[ -n "$rowh" ]]; then
+        # shellcheck disable=SC2323
+        pixelh=$((((((${termwh[1]} * 100) / ${termcr[1]}) * $rowh) / 100)))
+    else
+        pixelh="$pixelw"
+    fi    
+
+    echo "$(($pixelw * $zoom)) $(($pixelh * $zoom))"
 }
 
 # https://man.freebsd.org/cgi/man.cgi?query=xterm
@@ -435,11 +547,7 @@ show_pdf () {
     pdf_wh_max=$2
     pdf_thumb_path=""
 
-    if [[ -z "$is_cmd_mutool" ]] && \
-           [[ -z "$is_cmd_pdftoppm" ]]; then
-        echo "'mutool' or 'pdftoppm' commands not found";
-        exit 1
-    elif [[ -n "$is_cmd_mutool" ]]; then
+    if [[ -n "$is_cmd_mutool" ]]; then
         pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
         mutool \
             draw -i -F png \
@@ -452,6 +560,15 @@ show_pdf () {
             -f 1 -l 1 \
             -scale-to "$(wh_max_get "$2")" \
             -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
+    elif [[ -n "$is_cmd_magick" ]]; then
+        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
+        magick \
+            "$pdf_thumb_path" \
+            -define pdf:thumbnail=true \
+            "$pdf_path"
+    else
+        echo "mutool, pdftoppm or magick commands not found";
+        exit 0
     fi
 
     paint "$pdf_thumb_path" "$pdf_wh_max"
@@ -474,12 +591,12 @@ show_font () {
     font_preview_multiline=${font_preview_text// /\\n}
     font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
 
-    if [[ -z "$is_cmd_convert" ]]; then
+    if [[ -z "$is_cmd_magick" ]]; then
         echo "'convert' command not found (imagemagick)";
         exit 1
     fi
 
-    convert \
+    magick \
         -size "${font_wh_max/ /x}" \
         -background "$font_bg_color" \
         -fill "$font_fg_color" \
@@ -494,7 +611,11 @@ show_font () {
 
 start () {
     path=$1
-    start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
+    if [ -n "$cells" ]; then
+        start_wh=$(wh_fromrowscols_get "$2" "$3")
+    else
+        start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
+    fi
     start_wh=$(wh_term_scaled_get "$start_wh")
 
     if [ -n "$cache" ]; then
