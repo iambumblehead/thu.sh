@@ -7,12 +7,12 @@
 </p>
 
 **render-thumb-for.sh renders images for various file types to the terminal.** It renders images from audio, font, video, pdf, epub, svg and other files --supporting both kitty and sixel formats. It detects available commands from the system and for a small dependency tree,
- * render images: `magick` (sixel) or `kitten icat` (kitty),
- * convert pdf: `mutool` or `pdftoppm` or `magick`
- * convert video and audio: `ffmpeg`
- * convert font: `magick`
- * probe epub documents: `unzip`
- * probe file properties: `exiftool` or `identify`
+ * `magick` sixel or `kitten icat` display,
+ * `mutool`, `pdftoppm` or `magick` pdf,
+ * `ffmpeg` video audio,
+ * `magick` font,
+ * `unzip` epub,
+ * `exiftool` or `identify` file type
 
 
 ```bash
