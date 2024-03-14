@@ -1,6 +1,8 @@
 # changelog
 
- * 0.0.7 _Mar.09.2024_
+ * 0.0.8 _Mar.14.2024_
+   * added [less trivial tests](https://github.com/iambumblehead/render-thumb-for.sh/pull/33)
+ * 0.0.7 _Mar.14.2024_
    * improve [support for xterm](https://github.com/iambumblehead/render-thumb-for.sh/pull/25)
    * added [support for cell units](https://github.com/iambumblehead/render-thumb-for.sh/pull/26)
    * migrate [from convert command to magick](https://github.com/iambumblehead/render-thumb-for.sh/pull/26), per [advice here](https://github.com/ImageMagick/ImageMagick/discussions/7168) (maybe both 'convert' and 'magick' should be supported?)

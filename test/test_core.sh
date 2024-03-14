@@ -19,4 +19,7 @@ test_asset_latest_version_number_used () {
 
     assert_equals "$version_changelog" "$version_script" \
                   "should use same version, script and changelog"
+
+    assert_equals  "$version_changelog" "$(../render-thumb-for.sh -v)" \
+                   "should use same version, script -v and changelog"    
 }
