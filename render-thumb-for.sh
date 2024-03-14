@@ -545,8 +545,9 @@ show_pdf () {
     pdf_thumb_path=""
 
     if [[ -z "$is_cmd_mutool" ]] && \
-           [[ -z "$is_cmd_pdftoppm" ]]; then
-        echo "'mutool' or 'pdftoppm' commands not found";
+           [[ -z "$is_cmd_pdftoppm" ]] && \
+               [[ -z "$is_cmd_magick" ]]; then
+        echo "'mutool', 'pdftoppm' or `magick` commands not found";
         exit 1
     elif [[ -n "$is_cmd_mutool" ]]; then
         pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
@@ -561,6 +562,12 @@ show_pdf () {
             -f 1 -l 1 \
             -scale-to "$(wh_max_get "$2")" \
             -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
+    elif [[ -n "$is_cmd_magick" ]]; then
+        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
+        magick \
+            "$pdf_thumb_path" \
+            -define pdf:thumbnail=true \
+            "$pdf_path"
     fi
 
     paint "$pdf_thumb_path" "$pdf_wh_max"
