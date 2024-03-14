@@ -32,7 +32,7 @@ mimeTypePDF="pdf"
 #     ?tab=readme-ov-file#get-the-terminal-size-in-pixels
 escXTERMsixelissupported=$(printf '%b' "\e[c")
 escXTERMtermsize=$(printf '%b' "\e[14;2t")
-#escXTERMtermsize=$(printf '%b' "\e[15t")
+#escXTERMcellsize=$(printf '%b' "\e[16t")
 escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
 
 msgUnsupportedDisplay="image display is not supported"
