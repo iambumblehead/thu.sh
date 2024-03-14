@@ -48,12 +48,14 @@ wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
 number_re="^[[:digit:]]*$"
 
 cachedir="$HOME/.config/render-thumb-for"
-if [ -n "${XDG_CONFIG_HOME}" ]; then
+[ -n "${XDG_CONFIG_HOME}" ] &&
     cachedir="$XDG_CONFIG_HOME/render-thumb-for"
-fi
+
+is_stdout_ready=""
+[ -t 1 ] &&
+    is_stdout_ready="true"
 
 cells=
-nested=
 zoom=1
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
@@ -62,7 +64,7 @@ version=0.0.7
 while getopts "cnstz:vh" opt; do
     case "${opt}" in
         c) cells="true";; # use cell dimensions
-        n) nested="true";; # nested in ncurses, send esc queries to tty
+        n) is_stdout_ready="";; # ncurses using stdout, send esc codes to tty
         s) cache="true";; # use a cache
         t) timeoutss="${OPTARG}";; # use custom timeout, eg 2.5
         z) zoom="${OPTARG}";; # for foot <= 1.16.2, use custom zoom factor, eg 2
@@ -83,22 +85,18 @@ shift $(($OPTIND - 1))
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
 escquery_sixel_issupport_get () {
     esc="$escXTERMsixelissupported"
-    if [[ -n "$nested" ]]; then
+
+    if [[ -n "$is_stdout_ready" ]]; then
+        IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
+    else
         echo -e "$esc" > /dev/tty
         IFS=";" read -d "c" -sra REPLY < /dev/tty
-        for code in "${REPLY[@]}"; do
-            if [[ $code == 4 ]]; then
-                printf '%s\n' "true"
-                exit 1
-            fi
-        done
     fi
 
-    IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
     for code in "${REPLY[@]}"; do
         if [[ $code == 4 ]]; then
             printf '%s\n' "true"
-            exit 1
+            exit 0
         fi
     done
 }
@@ -264,32 +262,26 @@ wh_term_columnsrows_get () {
 
 wh_term_resolution_get () {
     esc="$escXTERMtermsize"
-    if [[ -n "$nested" ]]; then
+    if [[ -n "$is_stdout_ready" ]]; then
+        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    else
         echo -e "$esc" > /dev/tty
         IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
-        if [[ "${REPLY[1]}" =~ $number_re ]]; then
-            printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
-            exit 0
-        fi
     fi
 
-    IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
         printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
         exit 0
     fi
 
     esc="$escXTERMtermsizeTMUX"
-    if [[ -n "$nested" ]]; then
+    if [[ -n "$is_stdout_ready" ]]; then
+        IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    else
         echo -e '\e[14t' > /dev/tty
         IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" < /dev/tty
-        if [[ "${REPLY[1]}" =~ $number_re ]]; then
-            printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
-            exit 0
-        fi
     fi
 
-    IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
         printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
         exit 0
