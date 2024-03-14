@@ -54,20 +54,23 @@ fi
 
 cells=
 nested=
+zoom=1
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
 defaultw=1000
-while getopts "cnsth" opt; do
+while getopts "cnstz:h" opt; do
     case "${opt}" in
         c) cells="true";; # use cell dimensions
         n) nested="true";; # nested in ncurses, send esc queries to tty
         s) cache="true";; # use a cache
         t) timeoutss="${OPTARG}";; # use custom timeout, eg 2.5
+        z) zoom="${OPTARG}";; # for foot <= 1.16.2, use custom zoom factor, eg 2
         h|*) # Display help.
-            echo "-c to use row and height as cell units"
-            echo "-n to declare ncurses nested, send escape queries to tty"
-            echo "-s to configure cache ex, -s true"
-            echo "-t to use custom timeout (seconds) w/ shell query functions"
+            echo "-c use row and height as cell units"
+            echo "-n declare ncurses nested, send escape queries to tty"
+            echo "-s configure cache ex, -s true"
+            echo "-t use custom timeout (seconds) w/ shell query functions"
+            echo "-z configure zoom. affects calculated view area size ex, 2"
             exit 0;;
     esac
 done
@@ -317,7 +320,7 @@ wh_fromrowscols_get () {
         pixelh="$pixelw"
     fi    
 
-    echo "$pixelw $pixelh"
+    echo "$(($pixelw * $zoom)) $(($pixelh * $zoom))"
 }
 
 # https://man.freebsd.org/cgi/man.cgi?query=xterm
