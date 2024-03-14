@@ -11,7 +11,7 @@ is_cmd_kitten=$(command -v kitten)
     is_cmd_kitten_icat_support=$(kitten icat --detect-support 2>&1)
 is_cmd_mutool=$(command -v mutool)
 is_cmd_pdftoppm=$(command -v pdftoppm)
-is_cmd_convert=$(command -v convert)
+is_cmd_magick=$(command -v magick)
 is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
@@ -170,11 +170,11 @@ paint () {
 
     if [[ -n "$is_sixel_support" ]]; then
         export MAGICK_OCL_DEVICE=true
-        convert \
-            -channel rgba \
+        magick \
             -background "rgba(0,0,0,0)" \
+            "$img_path" \
             -geometry "${img_wh/ /x}" \
-            "$img_path" sixel:-
+            sixel:-
 
         echo ""
     elif [[ -n "$is_cmd_kitten_icat_support" ]]; then
@@ -583,12 +583,12 @@ show_font () {
     font_preview_multiline=${font_preview_text// /\\n}
     font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
 
-    if [[ -z "$is_cmd_convert" ]]; then
+    if [[ -z "$is_cmd_magick" ]]; then
         echo "'convert' command not found (imagemagick)";
         exit 1
     fi
 
-    convert \
+    magick \
         -size "${font_wh_max/ /x}" \
         -background "$font_bg_color" \
         -fill "$font_fg_color" \

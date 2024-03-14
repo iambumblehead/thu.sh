@@ -3,6 +3,7 @@
  * 0.0.7 _Mar.09.2024_
    * improve [support for xterm](https://github.com/iambumblehead/render-thumb-for.sh/pull/25)
    * addded [support for cell units](https://github.com/iambumblehead/render-thumb-for.sh/pull/26)
+   * migrate [from convert command to magick](https://github.com/iambumblehead/render-thumb-for.sh/pull/26), per [advice here](https://github.com/ImageMagick/ImageMagick/discussions/7168)
  * 0.0.6 _Mar.07.2024_
    * added sixel and kitty [differentiation to README](https://github.com/iambumblehead/render-thumb-for.sh/pull/16)
    * added [sixel detection](https://github.com/iambumblehead/render-thumb-for.sh/pull/17)
