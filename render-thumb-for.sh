@@ -31,7 +31,7 @@ mimeTypePDF="pdf"
 #   https://github.com/dylanaraps/pure-bash-bible
 #     ?tab=readme-ov-file#get-the-terminal-size-in-pixels
 escXTERMsixelissupported=$(printf '%b' "\e[c")
-escXTERMtermsize=$(printf '%b' "\e[14;2t")
+escXTERMtermsize=$(printf '%b' "\e[14t")
 #escXTERMcellsize=$(printf '%b' "\e[16t")
 escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
 
