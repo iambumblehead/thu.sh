@@ -69,7 +69,7 @@ timeoutss=1.2
 preprocess=""
 defaultw=1000
 version=0.0.8
-while getopts "cnpstz:vh" opt; do
+while getopts "cnpstiz:vh" opt; do
     case "${opt}" in
         c) cells="true";; # use cell dimensions
         i) sessid="${OPTARG}";; # sessid
@@ -648,7 +648,7 @@ show_font () {
     paint "$font_thumb_path" "$font_wh_max"
 }
 
-preprocess () {
+preprocess_get () {
     sixel_maxwh=$(escquery_sixel_maxwh_get)
     sixel_maxwhseg="sixelmax-${sixel_maxwh/ /x}"
     cellwh=$(escquery_cellwh_get)
@@ -691,7 +691,7 @@ start () {
 
 # do not run main when sourcing the script
 if [[ -n "preprocess" ]]; then
-    preprocess "$@"
+    preprocess_get "$@"
 elif [[ "$0" == "${BASH_SOURCE[0]}" ]]; then
     start "$@"
 else
