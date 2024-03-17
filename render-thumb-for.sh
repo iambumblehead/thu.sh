@@ -690,7 +690,7 @@ start () {
 }
 
 # do not run main when sourcing the script
-if [[ -n "preprocess" ]]; then
+if [[ -n "$preprocess" ]]; then
     preprocess_get "$@"
 elif [[ "$0" == "${BASH_SOURCE[0]}" ]]; then
     start "$@"
