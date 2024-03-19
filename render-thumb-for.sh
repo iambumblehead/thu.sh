@@ -5,13 +5,19 @@
 # ./render-thumb-for.sh /path/to/file.pdf
 # ./render-thumb-for.sh /path/to/file.ttf
 # ./render-thumb-for.sh /path/to/file.mp4 1020 780
-
+#
+# Exit code 0 Success
+# Exit code 1 General errors, Miscellaneous errors
+# Exit code 2 Misuse of shell builtins
+#
 is_cmd_kitten=$(command -v kitten)
 [ "$is_cmd_kitten" ] &&
     is_cmd_kitten_icat_support=$(kitten icat --detect-support 2>&1)
 is_cmd_mutool=$(command -v mutool)
 is_cmd_pdftoppm=$(command -v pdftoppm)
-is_cmd_magick=$(command -v magick)
+is_cmd_magick=$(command -v magick) # imagemagick 7
+is_cmd_convert=$(command -v convert) # imagemagick 6
+is_cmd_magick_any="$is_cmd_magick$is_cmd_convert"
 is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
@@ -36,6 +42,18 @@ escXTERMtermsize=$(printf '%b' "\e[14t")
 escXTERMcellsize=$(printf '%b' "\e[16t")
 escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
 
+msg_cmds_not_found () {
+    if [[ "$#" -gt 1 ]]; then
+        printf "Error: %s\n" "commands not found: $*"
+    else
+        printf "Error: %s\n" "command not found: $*"
+    fi
+}
+msg_cmd_not_found_pdfany=$(msg_cmds_not_found "mutool" "pdftoppm" "magick")
+msg_cmd_not_found_ffmpeg=$(msg_cmds_not_found "ffmpeg")
+msg_cmd_not_found_unzip=$(msg_cmds_not_found "unzip")
+msg_cmd_not_found_magickany=$(msg_cmds_not_found "magick" "convert")
+msg_cmd_not_found_identifyany=$(msg_cmds_not_found "exiftool" "identify")
 msgUnsupportedDisplay="image display is not supported"
 msgUnsupportedMime="mime type is not supported"
 msgUnknownWinSize="window size is unknown and could not be detected"
@@ -78,7 +96,7 @@ while getopts "cnpstiz:vh" opt; do
         s) cache="true";; # use a cache
         t) timeoutss="${OPTARG}";; # use custom timeout, eg 2.5
         z) zoom="${OPTARG}";; # for foot <= 1.16.2, use custom zoom factor, eg 2
-        v) echo "$version"; exit 1;;
+        v) echo "$version"; exit 0;;
         h|*) # Display help.
             echo "-c use row and height as cell units"
             echo "-n declare ncurses nested, send escape queries to tty"
@@ -153,7 +171,7 @@ regex() {
 
 zip_read_file () {
     if [[ -z "$is_cmd_unzip" ]]; then
-        echo "'unzip' command not found";
+        echo "$msg_cmd_not_found_unzip";
         exit 1
     fi
 
@@ -162,7 +180,7 @@ zip_read_file () {
 
 zip_move_file_out () {
     if [[ -z "$is_cmd_unzip" ]]; then
-        echo "'unzip' command not found";
+        echo "$msg_cmd_not_found_unzip";
         exit 1
     fi
 
@@ -184,7 +202,7 @@ cachedir_path_get () {
     pathwh="${3/ /x}"
     pathextn="${4:1}" #remove dot eg .jpg -> jpg
     pathname="$pathbase.$pathwh.$pathextn"
-    
+
     echo "$cachedir/$pathname"
 }
 
@@ -212,19 +230,168 @@ file_type_get () {
     fi
 }
 
-paint () {
+image_to_sixel_magick () {
     img_path=$1
     img_wh=$2
 
-    if [[ -n "$is_sixel_support" ]]; then
-        export MAGICK_OCL_DEVICE=true
+    if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
+        echo "$msg_cmd_not_found_magickany"
+        exit 1
+    fi
+
+    export MAGICK_OCL_DEVICE=true
+    if [[ -n "$is_cmd_magick" ]]; then
         magick \
             -background "rgba(0,0,0,0)" \
             "$img_path" \
             -geometry "${img_wh/ /x}" \
             sixel:-
-
         echo ""
+        exit 0
+    fi
+
+    if [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            -channel rgba \
+            -background "rgba(0,0,0,0)" \
+            -geometry "${img_wh/ /x}" \
+            "$img_path" \
+            sixel:-
+        echo ""
+        exit 0
+    fi
+}
+
+pdf_to_image_magick () {
+    pdf_thumb_path=$1
+    pdf_path=$2
+
+    if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
+        echo "$msg_cmd_not_found_magickany"
+        exit 1
+    fi
+
+    if [[ -n "$is_cmd_magick" ]]; then
+        magick \
+            "$pdf_thumb_path" \
+            -define pdf:thumbnail=true \
+            "$pdf_path"
+        exit 0
+    fi
+
+    if [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            "$pdf_thumb_path" \
+            -define pdf:thumbnail=true \
+            "$pdf_path"
+        exit 0
+    fi
+}
+
+# shellcheck disable=SC2116
+magick_font_to_image () {
+    font_path=$1
+    font_wh_max=$2
+    font_pointsize="$(wh_pointsize_get "$2")"
+    font_bg_color="rgba(0,0,0,1)"
+    font_fg_color="rgba(240,240,240,1)"
+    font_preview_text=$(
+        echo "ABCDEFGHIJKLM" \
+             "NOPQRSTUVWXYZ" \
+             "abcdefghijklm" \
+             "nopqrstuvwxyz" \
+             "1234567890" \
+             "!@$\%(){}[]")
+    font_preview_multiline=${font_preview_text// /\\n}
+    font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
+
+    if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
+        echo "$msg_cmd_not_found_magickany"
+        exit 1
+    fi
+
+    if [[ -n "$is_cmd_magick" ]]; then
+        magick \
+            -size "${font_wh_max/ /x}" \
+            -background "$font_bg_color" \
+            -fill "$font_fg_color" \
+            -font "$font_path" \
+            -pointsize "$font_pointsize" \
+            -gravity Center \
+            "label:${font_preview_multiline}" \
+            "$font_thumb_path"
+
+        echo "$font_thumb_path"
+        exit 0
+    fi
+
+    if [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            -size "${font_wh_max/ /x}" \
+            -background "$font_bg_color" \
+            -fill "$font_fg_color" \
+            -font "$font_path" \
+            -pointsize "$font_pointsize" \
+            -gravity Center \
+            "label:${font_preview_multiline}" \
+            "$font_thumb_path"
+
+        echo "$font_thumb_path"
+        exit 0
+    fi
+}
+
+pdf_to_image () {
+    pdf_path=$1
+    pdf_wh_max=$2
+    pdf_thumb_path=""
+
+    if [[ -z "$is_cmd_mutool" && -z "$is_cmd_pdftoppm" &&
+              -z "$is_cmd_magick_any" ]]; then
+        echo "$msg_cmd_not_found_pdfany"
+        exit 1
+    fi
+
+    if [[ -n "$is_cmd_mutool" ]]; then
+        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
+        mutool \
+            draw -i -F png \
+            -o "$pdf_thumb_path" "$pdf_path" 1 &> /dev/null
+
+        echo "$pdf_thumb_path"
+        exit 0
+    fi
+
+    if [[ -n "$is_cmd_pdftoppm" ]]; then
+        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
+        # extension needs to be removed from output path "pattern" used here
+        pdftoppm \
+            -singlefile \
+            -f 1 -l 1 \
+            -scale-to "$(wh_max_get "$2")" \
+            -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
+
+        echo "$pdf_thumb_path"
+        exit 0
+    fi
+
+    if [[ -n "$is_cmd_magick_any" ]]; then
+        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
+
+        pdf_to_image_magick \
+            "$pdf_thumb_path" "$pdf_path"
+
+        echo "$pdf_thumb_path"
+        exit 0
+    fi
+}
+
+paint () {
+    img_path=$1
+    img_wh=$2
+
+    if [[ -n "$is_sixel_support" ]]; then
+        image_to_sixel_magick "$img_path" "$img_wh"
     elif [[ -n "$is_cmd_kitten_icat_support" ]]; then
         # kitten does not provide a 'geometry' option
         # so image must have been preprocessed to fit desired geometry
@@ -345,19 +512,17 @@ wh_fromrowscols_get () {
     IFS=" " read -r -a termwh <<< "$(wh_term_resolution_get)"
     IFS=" " read -r -a termcr <<< "$(wh_term_columnsrows_get)"
 
-    if [[ -n "$colw" ]]; then
-        # shellcheck disable=SC2323
+    if [[ -n "$colw" ]]; then # shellcheck disable=SC2323
         pixelw=$((((((${termwh[0]} * 100) / ${termcr[0]}) * $colw) / 100)))
     else
         pixelw="$defaultw"
     fi
 
-    if [[ -n "$rowh" ]]; then
-        # shellcheck disable=SC2323
+    if [[ -n "$rowh" ]]; then # shellcheck disable=SC2323
         pixelh=$((((((${termwh[1]} * 100) / ${termcr[1]}) * $rowh) / 100)))
     else
         pixelh="$pixelw"
-    fi    
+    fi
 
     echo "$(($pixelw * $zoom)) $(($pixelh * $zoom))"
 }
@@ -395,9 +560,8 @@ img_wh_identify_get () {
 }
 
 img_wh_get () {
-    if [[ -z "$is_cmd_exiftool" ]] && \
-           [[ -z "$is_cmd_identify" ]]; then
-        echo "'exiftool' or 'identify' commands not found";
+    if [[ -z "$is_cmd_exiftool" && -z "$is_cmd_identify" ]]; then
+        echo "$msg_cmd_not_found_identifyany"
         exit 1
     elif [[ -n "$is_cmd_exiftool" ]]; then
         img_wh_exiftool_get "$1"
@@ -534,7 +698,7 @@ show_video () {
     vid_thumb_path=$(cachedir_path_get "$cachedir" "video" "w h" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
-        echo "'ffmpeg' command not found";
+        echo "$msg_cmd_not_found_ffmpeg";
         exit 1
     fi
 
@@ -562,7 +726,7 @@ show_audio () {
     aud_thumb_path=$(cachedir_path_get "$cachedir" "audio" "w h" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
-        echo "'ffmpeg' command not found";
+        echo "$msg_cmd_not_found_ffmpeg";
         exit 1
     fi
 
@@ -584,68 +748,19 @@ show_audio () {
 show_pdf () {
     pdf_path=$1
     pdf_wh_max=$2
-    pdf_thumb_path=""
 
-    if [[ -n "$is_cmd_mutool" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
-        mutool \
-            draw -i -F png \
-            -o "$pdf_thumb_path" "$pdf_path" 1 &> /dev/null
-    elif [[ -n "$is_cmd_pdftoppm" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
-        # extension needs to be removed from output path "pattern" used here
-        pdftoppm \
-            -singlefile \
-            -f 1 -l 1 \
-            -scale-to "$(wh_max_get "$2")" \
-            -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
-    elif [[ -n "$is_cmd_magick" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
-        magick \
-            "$pdf_thumb_path" \
-            -define pdf:thumbnail=true \
-            "$pdf_path"
-    else
-        echo "mutool, pdftoppm or magick commands not found";
-        exit 0
+    if pdf_thumb_path=$(pdf_to_image "$pdf_path" "$pdf_wh_max"); then
+        paint "$pdf_thumb_path" "$pdf_wh_max"
     fi
-
-    paint "$pdf_thumb_path" "$pdf_wh_max"
 }
 
-# shellcheck disable=SC2116
 show_font () {
     font_path=$1
     font_wh_max=$2
-    font_pointsize="$(wh_pointsize_get "$2")"
-    font_bg_color="rgba(0,0,0,1)"
-    font_fg_color="rgba(240,240,240,1)"
-    font_preview_text=$(
-        echo "ABCDEFGHIJKLM" \
-             "NOPQRSTUVWXYZ" \
-             "abcdefghijklm" \
-             "nopqrstuvwxyz" \
-             "1234567890" \
-             "!@$\%(){}[]")
-    font_preview_multiline=${font_preview_text// /\\n}
-    font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
 
-    if [[ -z "$is_cmd_magick" ]]; then
-        echo "'convert' command not found (imagemagick)";
-        exit 1
+    if font_thumb_path=$(magick_font_to_image "$font_path" "$font_wh_max"); then
+        paint "$font_thumb_path" "$font_wh_max"
     fi
-
-    magick \
-        -size "${font_wh_max/ /x}" \
-        -background "$font_bg_color" \
-        -fill "$font_fg_color" \
-        -font "$font_path" \
-        -pointsize "$font_pointsize" \
-        -gravity Center \
-        "label:${font_preview_multiline}" \
-        "$font_thumb_path"
-
-    paint "$font_thumb_path" "$font_wh_max"
 }
 
 preprocess_get () {
