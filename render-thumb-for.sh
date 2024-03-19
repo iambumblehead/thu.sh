@@ -44,9 +44,9 @@ escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}
 
 msg_cmds_not_found () {
     if [[ "$#" -gt 1 ]]; then
-        echo "commands not found: $@"
+        printf "Error: %s\n" "commands not found: $*"
     else
-        echo "command not found: $@"
+        printf "Error: %s\n" "command not found: $*"
     fi
 }
 msg_cmd_not_found_pdfany=$(msg_cmds_not_found "mutool" "pdftoppm" "magick")
@@ -288,6 +288,7 @@ pdf_to_image_magick () {
     fi
 }
 
+# shellcheck disable=SC2116
 magick_font_to_image () {
     font_path=$1
     font_wh_max=$2
@@ -747,20 +748,17 @@ show_audio () {
 show_pdf () {
     pdf_path=$1
     pdf_wh_max=$2
-    pdf_thumb_path=$(pdf_to_image "$pdf_path" "$pdf_wh_max")
 
-    if [[ $? -eq 0 ]]; then
+    if pdf_thumb_path=$(pdf_to_image "$pdf_path" "$pdf_wh_max"); then
         paint "$pdf_thumb_path" "$pdf_wh_max"
     fi
 }
 
-# shellcheck disable=SC2116
 show_font () {
     font_path=$1
     font_wh_max=$2
-    font_thumb_path=$(magick_font_to_image "$font_path" "$font_wh_max")
 
-    if [[ $? -eq 0 ]]; then
+    if font_thumb_path=$(magick_font_to_image "$font_path" "$font_wh_max"); then
         paint "$font_thumb_path" "$font_wh_max"
     fi
 }
