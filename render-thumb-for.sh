@@ -31,8 +31,9 @@ mimeTypePDF="pdf"
 #   https://github.com/dylanaraps/pure-bash-bible
 #     ?tab=readme-ov-file#get-the-terminal-size-in-pixels
 escXTERMsixelissupported=$(printf '%b' "\e[c")
+escXTERMsixelmaxwh=$(printf '%b' "\e[?2;4;0S")
 escXTERMtermsize=$(printf '%b' "\e[14t")
-#escXTERMcellsize=$(printf '%b' "\e[16t")
+escXTERMcellsize=$(printf '%b' "\e[16t")
 escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
 
 msgUnsupportedDisplay="image display is not supported"
@@ -55,16 +56,25 @@ is_stdout_ready=""
 [ -t 1 ] &&
     is_stdout_ready="true"
 
+mstimestamp () {
+    # millisecond timestamp ex, 1710459031.000
+    printf "%.3f\n" $((${EPOCHREALTIME/.} / 1000000))
+}
+
+sessid=$(mstimestamp)
 cells=
 zoom=1
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
+preprocess=""
 defaultw=1000
 version=0.0.8
-while getopts "cnstz:vh" opt; do
+while getopts "cnpstiz:vh" opt; do
     case "${opt}" in
         c) cells="true";; # use cell dimensions
+        i) sessid="${OPTARG}";; # sessid
         n) is_stdout_ready="";; # ncurses using stdout, send esc codes to tty
+        p) preprocess="true";; # skip main behaviour, write preprocessed data
         s) cache="true";; # use a cache
         t) timeoutss="${OPTARG}";; # use custom timeout, eg 2.5
         z) zoom="${OPTARG}";; # for foot <= 1.16.2, use custom zoom factor, eg 2
@@ -101,6 +111,40 @@ escquery_sixel_issupport_get () {
     done
 }
 is_sixel_support=$(escquery_sixel_issupport_get)
+
+escquery_cellwh_get () {
+    esc="$escXTERMcellsize"
+    if [[ -n "$is_stdout_ready" ]]; then
+        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    else
+        echo -e "$esc" > /dev/tty
+        IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+    fi
+
+    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+        printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+        exit 0
+    fi
+}
+
+# empty return value if sixel is not-supported
+escquery_sixel_maxwh_get () {
+    if [[ -z $(escquery_sixel_issupport_get) ]]; then
+        exit 0
+    fi
+
+    esc="$escXTERMsixelmaxwh"
+    if [[ -n "$is_stdout_ready" ]]; then
+        IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" -p "$esc" >&2
+    else
+        echo -e "$esc" > /dev/tty
+        IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" < /dev/tty
+    fi
+
+    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+        printf '%s\n' "${REPLY[2]} ${REPLY[3]}"
+    fi
+}
 
 regex() {
     # Usage: regex "string" "regex"
@@ -604,6 +648,15 @@ show_font () {
     paint "$font_thumb_path" "$font_wh_max"
 }
 
+preprocess_get () {
+    sixel_maxwh=$(escquery_sixel_maxwh_get)
+    sixel_maxwhseg="sixelmax-${sixel_maxwh/ /x}"
+    cellwh=$(escquery_cellwh_get)
+    cellwhseg="cell-${cellwh/ /x}"
+
+    printf '%s\n' "v$version,$sessid,$cellwhseg,$sixel_maxwhseg"
+}
+
 start () {
     path=$1
     if [ -n "$cells" ]; then
@@ -637,7 +690,9 @@ start () {
 }
 
 # do not run main when sourcing the script
-if [[ "$0" == "${BASH_SOURCE[0]}" ]]; then
+if [[ -n "$preprocess" ]]; then
+    preprocess_get "$@"
+elif [[ "$0" == "${BASH_SOURCE[0]}" ]]; then
     start "$@"
 else
     true
