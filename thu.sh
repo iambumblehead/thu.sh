@@ -67,6 +67,7 @@ msg_unsupported_display="image display is not supported"
 msg_unsupported_mime="mime type is not supported"
 msg_unknown_win_size="window size is unknown and could not be detected"
 msg_invalid_resolution="resolution invalid: :resolution"
+msg_invalid_zoom="resolution invalid: :zoom"
 msg_epub_cover_not_found="epub cover image could not be located"
 
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
@@ -75,7 +76,8 @@ fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
 wxhstr_re="^[[:digit:]]+[x][[:digit:]]+$"
-number_re="^[[:digit:]]+$"
+integer_re="^[[:digit:]]+$"
+version_re="([[:digit:]]+[\.][[:digit:]]+[\.][[:digit:]]+)"
 
 cachedir="$HOME/.config/thu"
 [ -n "${XDG_CONFIG_HOME}" ] &&
@@ -92,13 +94,14 @@ mstimestamp () {
 }
 
 sessid=$(mstimestamp)
+zoom=
 cells=
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
 preprocess=""
 defaultw=1000
 version=0.0.8
-while getopts "cr:bpstivh" opt; do
+while getopts "cr:bpstivz:h" opt; do
     case "${opt}" in
         c) cells="true";;
         r) resolution="${OPTARG}"
@@ -110,6 +113,10 @@ while getopts "cr:bpstivh" opt; do
         p) preprocess="true";; # skip main behaviour, write preprocessed data
         s) cache="true";;
         t) timeoutss="${OPTARG}";;
+        z) zoom="${OPTARG}"
+           if [[ ! "$zoom" =~ $integer_re ]]; then
+               fail "${msg_invalid_zoom/:zoom/${OPTARG}}"
+           fi ;;
         v) echo "$version"; exit 0;;
         h|*) # Display help.
             echo "-c proces width and height as cell columns and lines"
@@ -123,6 +130,47 @@ while getopts "cr:bpstivh" opt; do
     esac
 done
 shift $(($OPTIND - 1))
+
+is_foot_lte_1_16_2_get () {
+    if [[ $TERM == "foot" ]]; then
+        foot_details=$(foot --version)
+        foot_version=$(regex "$foot_details" "$version_re")
+
+        if [[ -n "$foot_version" ]]; then
+            IFS="." read -ra semver <<< "$foot_version"
+            major="${semver[0]}"
+            minor="${semver[1]}"
+            patch="${semver[2]}"
+
+            if [[ "$major" -lt 1 ]]; then
+                echo "true"
+            elif [[ "$major" -eq 1 ]]; then
+                if [[ "$minor" -lt 16 ]]; then
+                    echo "true"
+                elif [[ "$minor" -eq 16 ]]; then
+                    if [[ "$patch" -le 2 ]]; then
+                        echo "true"
+                    fi
+                fi
+            fi
+        fi
+    fi
+}
+
+# shellcheck disable=SC2116
+is_foot_lte_1_16_2_message_get () {
+    footmsg=$(
+        echo "WARNING: When window resolution is scaled, this version of foot" \
+             "returns incorrect dimensions:" \
+             "https://codeberg.org/dnkl/foot/issues/1643," \
+             "" \
+             "To supress this message, define zoom scale using \"-z \$SCALE\"." \
+             "The value of \$SCALE will correspond to the window scale used." \
+             "If no window scaling, use \"-z 1\"." \
+             "If a 3x window scaling is used, use \"-z 3\".")
+
+    printf '%s\n' "${footmsg}"
+}
 
 fail () {
     printf '%s\n' "$1" >&2 ## Send message to stderr.
@@ -158,12 +206,13 @@ escquery_cellwh_get () {
         IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
-    if [[ "${REPLY[1]}" =~ $number_re ]]; then
-        printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
-        exit 0
-    fi
+    if [[ "${REPLY[1]}" =~ $integer_re ]]; then
+        z=$([ -n "$zoom" ] && echo "$zoom" || echo "1")
 
-    fail "$msg_undetectable_cell_size"
+        printf '%s\n' "$((${REPLY[2]}*$z))x$((${REPLY[1]}*$z))"
+    else
+        fail "$msg_undetectable_cell_size"
+    fi
 }
 
 # empty return value if sixel is not-supported
@@ -180,7 +229,7 @@ escquery_sixel_maxwh_get () {
         IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
-    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+    if [[ "${REPLY[1]}" =~ $integer_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[3]}"
     fi
 }
@@ -188,15 +237,11 @@ escquery_sixel_maxwh_get () {
 image_display_format_get () {
     if [[ -n "$(escquery_sixel_issupport_get)" ]]; then
         printf '%s\n' "$format_type_SIXEL"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_kitten_icat_support" ]]; then
+    elif [[ -n "$is_cmd_kitten_icat_support" ]]; then
         printf '%s\n' "$format_type_KITTY"
-        exit 0
+    else
+        fail "$msg_unsupported_display"
     fi
-
-    fail "$msg_unsupported_display"
 }
 
 regex() {
@@ -318,11 +363,11 @@ wh_start_get () {
     w=$([ -n "$1" ] && echo "$1" || echo "$((${wharea_def%%x*} * 80 / 100))")
     h=$([ -n "$2" ] && echo "$2" || echo "$((${wharea_def##*x} * 80 / 100))")
 
-    if [[ ! $w =~ $number_re ]]; then
+    if [[ ! $w =~ $integer_re ]]; then
         fail "${msg_unsupported_width/:width/$w}"
     fi
 
-    if [[ ! $h =~ $number_re ]]; then
+    if [[ ! $h =~ $integer_re ]]; then
         fail "${msg_unsupported_height/:height/$h}"
     fi
 
@@ -359,13 +404,13 @@ wh_imagemax_get () {
 }
 
 wh_max_get () {
-    IFS="x" read -r -a wh <<< "$1"
+    IFS="x" read -ra wh <<< "$1"
 
     echo "$((${wh[0]} > ${wh[1]} ? ${wh[0]} : ${wh[1]}))"
 }
 
 wh_pointsize_get () {
-    IFS="x" read -r -a wh <<< "$1"
+    IFS="x" read -ra wh <<< "$1"
 
     min=$((${wh[0]} > ${wh[1]} ? ${wh[1]} : ${wh[0]}))
     mul=$((${wh[0]} > ${wh[1]} ? 9 : 10))
@@ -374,8 +419,8 @@ wh_pointsize_get () {
 }
 
 wh_scaled_get () {
-    IFS="x" read -r -a wh_bgn <<< "$1"
-    IFS="x" read -r -a wh_max <<< "$2"
+    IFS="x" read -ra wh_bgn <<< "$1"
+    IFS="x" read -ra wh_max <<< "$2"
     w_bgn=${wh_bgn[0]}
     w_max=${wh_max[0]}
     h_bgn=${wh_bgn[1]}
@@ -416,7 +461,7 @@ wh_term_resolution_get () {
         IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
-    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+    if [[ "${REPLY[1]}" =~ $integer_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
         exit 0
     fi
@@ -429,7 +474,7 @@ wh_term_resolution_get () {
         IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
-    if [[ "${REPLY[1]}" =~ $number_re ]]; then
+    if [[ "${REPLY[1]}" =~ $integer_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
         exit 0
     fi
@@ -442,8 +487,8 @@ wh_term_resolution_get () {
 # to avoid rounding issues that may result io too-small numbers,
 # resolution is calculated from the full set of columns and rows
 wh_pixels_from_cells_get () {
-    IFS="x" read -r -a wh <<< "$1"
-    IFS="x" read -r -a whcell <<< "$2"
+    IFS="x" read -ra wh <<< "$1"
+    IFS="x" read -ra whcell <<< "$2"
 
     echo "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
 }
@@ -849,6 +894,10 @@ start () {
     target_wh_goal=$(wh_start_get "$2" "$3" "$cells" "$wh_cell")
     [[ $target_wh_max =~ $wxhstr_re ]] &&
         target_wh_goal=$(wh_scaled_get "$target_wh_goal" "$target_wh_max")
+
+    if [[ -n $(is_foot_lte_1_16_2_get) && -z "$zoom" ]]; then
+        is_foot_lte_1_16_2_message_get
+    fi
 
     if [ -n "$cache" ]; then
         cachedir_calibrate "$cachedir"
