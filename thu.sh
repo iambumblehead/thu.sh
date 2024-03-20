@@ -76,7 +76,8 @@ fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
 wxhstr_re="^[[:digit:]]+[x][[:digit:]]+$"
-integer_re="^[[:digit:]]+$"
+numint_re="^[[:digit:]]+$"
+numfl_re="^[-+]?[[:digit:]]+\.?[[:digit:]]*$"
 version_re="([[:digit:]]+[\.][[:digit:]]+[\.][[:digit:]]+)"
 
 cachedir="$HOME/.config/thu"
@@ -113,8 +114,8 @@ while getopts "cr:bpstivz:h" opt; do
         p) preprocess="true";; # skip main behaviour, write preprocessed data
         s) cache="true";;
         t) timeoutss="${OPTARG}";;
-        z) zoom="${OPTARG}"
-           if [[ ! "$zoom" =~ $integer_re ]]; then
+        z) zoom="${OPTARG%.*}" # remove after decimal for now
+           if [[ ! "$zoom" =~ $numfl_re ]]; then
                fail "${msg_invalid_zoom/:zoom/${OPTARG}}"
            fi ;;
         v) echo "$version"; exit 0;;
@@ -206,7 +207,7 @@ escquery_cellwh_get () {
         IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
-    if [[ "${REPLY[1]}" =~ $integer_re ]]; then
+    if [[ "${REPLY[1]}" =~ $numint_re ]]; then
         z=$([ -n "$zoom" ] && echo "$zoom" || echo "1")
 
         printf '%s\n' "$((${REPLY[2]}*$z))x$((${REPLY[1]}*$z))"
@@ -229,7 +230,7 @@ escquery_sixel_maxwh_get () {
         IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
-    if [[ "${REPLY[1]}" =~ $integer_re ]]; then
+    if [[ "${REPLY[1]}" =~ $numint_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[3]}"
     fi
 }
@@ -363,11 +364,11 @@ wh_start_get () {
     w=$([ -n "$1" ] && echo "$1" || echo "$((${wharea_def%%x*} * 80 / 100))")
     h=$([ -n "$2" ] && echo "$2" || echo "$((${wharea_def##*x} * 80 / 100))")
 
-    if [[ ! $w =~ $integer_re ]]; then
+    if [[ ! $w =~ $numint_re ]]; then
         fail "${msg_unsupported_width/:width/$w}"
     fi
 
-    if [[ ! $h =~ $integer_re ]]; then
+    if [[ ! $h =~ $numint_re ]]; then
         fail "${msg_unsupported_height/:height/$h}"
     fi
 
@@ -461,7 +462,7 @@ wh_term_resolution_get () {
         IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
-    if [[ "${REPLY[1]}" =~ $integer_re ]]; then
+    if [[ "${REPLY[1]}" =~ $numint_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
         exit 0
     fi
@@ -474,7 +475,7 @@ wh_term_resolution_get () {
         IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
-    if [[ "${REPLY[1]}" =~ $integer_re ]]; then
+    if [[ "${REPLY[1]}" =~ $numint_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
         exit 0
     fi
