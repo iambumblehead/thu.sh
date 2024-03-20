@@ -610,11 +610,11 @@ img_wh_get () {
     if [[ -z "$is_cmd_exiftool" && -z "$is_cmd_identify" ]]; then
         fail "$msg_cmd_not_found_identifyany"
     elif [[ -n "$is_cmd_exiftool" ]]; then
-        wh=$(img_wh_exiftool_get "$1")
-        printf '%s\n' "${wh/ /x}"
+        imgwh=$(img_wh_exiftool_get "$1")
+        printf '%s\n' "${imgwh/ /x}"
     elif [[ -n "$is_cmd_identify" ]]; then
-        wh=$(img_wh_identify_get "$1")
-        printf '%s\n' "${wh/ /x}"
+        imgwh=$(img_wh_identify_get "$1")
+        printf '%s\n' "${imgwh/ /x}"
     fi
 }
 
