@@ -274,10 +274,7 @@ image_to_sixel_magick () {
             -geometry "$img_wh" \
             sixel:-
         echo ""
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_convert" ]]; then
+    elif [[ -n "$is_cmd_convert" ]]; then
         convert \
             -channel rgba \
             -background "rgba(0,0,0,0)" \
@@ -285,10 +282,9 @@ image_to_sixel_magick () {
             "$img_path" \
             sixel:-
         echo ""
-        exit 0
+    else
+        fail "$msg_cmd_not_found_magickany"
     fi
-
-    fail "$msg_cmd_not_found_magickany"
 }
 
 # thumb_create_from_pdf_magick $path $wh
@@ -423,6 +419,55 @@ paint () {
         *)
             fail "$msg_unsupported_display, format_type: \"$3\""
     esac
+}
+
+thumb_create_from_image () {
+    oimg_path=$1
+    oimg_target_wh=$2
+    oimg_wh_native=$(img_wh_get "$oimg_path")
+    oimg_wh_scaled=$(wh_scaled_get "$oimg_wh_native" "$oimg_target_wh")
+    oimg_thumb_path=$(cachedir_path_get "$cachedir" "img" "$2" ".png")
+
+    if [[ -n "$is_cmd_magick" ]]; then
+        magick \
+            "$oimg_path" \
+            -resize "$oimg_wh_scaled" \
+            "$oimg_thumb_path"
+    elif [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            "$oimg_path" \
+            -resize "$oimg_wh_scaled" \
+            "$oimg_thumb_path"
+    else
+        fail "$msg_cmd_not_found_magickany"
+    fi
+
+    echo "$oimg_thumb_path"
+}
+
+thumb_create_from_svg () {
+    svgimg_path=$1
+    svgimg_target_wh=$2
+    svgimg_thumb_path=$(cachedir_path_get "$cachedir" "svg" "$2" ".png")
+
+    if [[ -n "$is_cmd_magick" ]]; then
+        magick \
+            -background "rgba(0,0,0,0)" \
+            "$svgimg_path" \
+            -geometry "$svgimg_target_wh" \
+            "$svgimg_thumb_path"
+    elif [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            -channel rgba \
+            -background "rgba(0,0,0,0)" \
+            -geometry "$svgimg_target_wh" \
+            "$svgimg_path" \
+            "$svgimg_thumb_path"
+    else
+        fail "$msg_cmd_not_found_magickany"
+    fi
+
+    echo "$svgimg_thumb_path"
 }
 
 paint_downscale () {
@@ -707,7 +752,7 @@ epub_rootfile_manifestcover_get () {
     echo "$epub_rxml_manifitemhref"
 }
 
-show_epub () {
+thumb_create_from_epub () {
     epub_path=$1
     epub_wh_max=$2
     #epub_ls=$(unzip -l "$1")
@@ -722,13 +767,13 @@ show_epub () {
             "$epub_manifest_cover" \
             "$cachedir"
 
-        paint_downscale "$epub_manifest_cover_dest" "$epub_wh_max" "$3"
+        thumb_create_from_image "$epub_manifest_cover_dest" "$epub_wh_max"
     else
         fail "$msg_epub_cover_not_found"
     fi
 }
 
-show_video () {
+thumb_create_from_video () {
     vid_path=$1
     vid_wh_max=$2
     vid_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
@@ -754,10 +799,10 @@ show_video () {
         -hide_banner \
         -y "$vid_thumb_path"
 
-    paint "$vid_thumb_path" "$vid_wh_scaled" "$3"
+    echo "$vid_thumb_path"
 }
 
-show_audio () {
+thumb_create_from_audio () {
     aud_path=$1
     aud_wh_max=$2
     aud_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
@@ -781,7 +826,7 @@ show_audio () {
         -hide_banner \
         -y "$aud_thumb_path"
 
-    paint "$aud_thumb_path" "$aud_wh_scaled" "$3"
+    echo "$aud_thumb_path"
 }
 
 preprocess_get () {
@@ -808,15 +853,15 @@ start () {
 
     case $(file_type_get "$path") in
         "$mime_type_SVG")
-            paint "$path" "$target_wh_goal" "$target_format";;
+            thumb_path=$(thumb_create_from_svg "$path" "$target_wh_goal");;
         "$mime_type_IMAGE")
-            paint_downscale "$path" "$target_wh_goal" "$target_format";;
+            thumb_path=$(thumb_create_from_image "$path" "$target_wh_goal");;
         "$mime_type_VIDEO")
-            show_video "$path" "$target_wh_goal" "$target_format";;
+            thumb_path=$(thumb_create_from_video "$path" "$target_wh_goal");;
         "$mime_type_AUDIO")
-            show_audio "$path" "$target_wh_goal" "$target_format";;
+            thumb_path=$(thumb_create_from_audio "$path" "$target_wh_goal");;
         "$mime_type_EPUB")
-            show_epub "$path" "$target_wh_goal" "$target_format";;
+            thumb_path=$(thumb_create_from_epub "$path" "$target_wh_goal");;
         "$mime_type_PDF")
             thumb_path=$(thumb_create_from_pdf "$path" "$target_wh_goal");;
         "$mime_type_FONT")
