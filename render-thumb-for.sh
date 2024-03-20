@@ -598,22 +598,20 @@ wh_pixels_from_cells_get () {
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
-    exiftool -p '$ImageWidth $ImageHeight' "$1"
+    exiftool -p '${ImageWidth}x${ImageHeight}' "$1"
 }
 
 img_wh_identify_get () {
-    identify -format "%w %h" "$1"
+    identify -format "%wx%h" "$1"
 }
 
 img_wh_get () {
-    if [[ -z "$is_cmd_exiftool" && -z "$is_cmd_identify" ]]; then
-        fail "$msg_cmd_not_found_identifyany"
-    elif [[ -n "$is_cmd_exiftool" ]]; then
-        imgwh=$(img_wh_exiftool_get "$1")
-        printf '%s\n' "${imgwh/ /x}"
+    if [[ -n "$is_cmd_exiftool" ]]; then
+        img_wh_exiftool_get "$1"
     elif [[ -n "$is_cmd_identify" ]]; then
-        imgwh=$(img_wh_identify_get "$1")
-        printf '%s\n' "${imgwh/ /x}"
+        img_wh_identify_get "$1"
+    else
+        fail "$msg_cmd_not_found_identifyany"
     fi
 }
 
