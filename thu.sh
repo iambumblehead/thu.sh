@@ -291,13 +291,13 @@ image_to_sixel_magick () {
     fail "$msg_cmd_not_found_magickany"
 }
 
-# thumb_create_from_pdf $path $wh
-thumb_create_from_pdf () {
+# thumb_create_from_pdf_magick $path $wh
+thumb_create_from_pdf_magick () {
     pdf_path=$1
     pdf_target_wh=$2
     pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "$2" ".jpg")
 
-    if [[ ! -n "$is_cmd_magick" ]]; then
+    if [[ -n "$is_cmd_magick" ]]; then
         magick \
             "${pdf_path}[0]" \
             -define pdf:thumbnail=true \
@@ -312,6 +312,36 @@ thumb_create_from_pdf () {
     else
         fail "$msg_cmd_not_found_magickany"
     fi
+
+    echo "$pdf_thumb_path"
+}
+
+thumb_create_from_pdf_mutool () {
+    pdf_path=$1
+    pdf_target_wh=$2
+    pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
+
+    mutool \
+        draw -i \
+        -r 72 \
+        -w "${pdf_target_wh%%x*}" \
+        -h "${pdf_target_wh##*x}" \
+        -F png \
+        -o "$pdf_thumb_path" "$pdf_path" 1 &> /dev/null
+
+    echo "$pdf_thumb_path"
+}
+
+thumb_create_from_pdf_pdftoppm () {
+    pdf_path=$1
+    pdf_target_wh=$2
+    pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
+    # extension needs to be removed from output path "pattern" used here
+    pdftoppm \
+        -singlefile \
+        -f 1 -l 1 \
+        -scale-to "$(wh_max_get "$2")" \
+        -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
 
     echo "$pdf_thumb_path"
 }
@@ -366,47 +396,16 @@ thumb_create_from_font () {
     fail "$msg_cmd_not_found_magickany"
 }
 
-pdf_to_image () {
-    pdf_path=$1
-    pdf_wh_max=$2
-    pdf_thumb_path=""
-
-    if [[ -z "$is_cmd_mutool" && -z "$is_cmd_pdftoppm" &&
-              -z "$is_cmd_magick_any" ]]; then
-        fail "$msg_cmd_not_found_pdfany"
-    fi
-
+# thumb_create_from_pdf $path $wh
+thumb_create_from_pdf () {
     if [[ -n "$is_cmd_mutool" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
-        mutool \
-            draw -i -F png \
-            -o "$pdf_thumb_path" "$pdf_path" 1 &> /dev/null
-
-        echo "$pdf_thumb_path"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_pdftoppm" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
-        # extension needs to be removed from output path "pattern" used here
-        pdftoppm \
-            -singlefile \
-            -f 1 -l 1 \
-            -scale-to "$(wh_max_get "$2")" \
-            -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
-
-        echo "$pdf_thumb_path"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_magick_any" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
-
-        pdf_to_image_magick \
-            "$pdf_thumb_path" "$pdf_path"
-
-        echo "$pdf_thumb_path"
-        exit 0
+        thumb_create_from_pdf_mutool "$@"
+    elif [[ -n "$is_cmd_pdftoppm" ]]; then
+        thumb_create_from_pdf_pdftoppm "$@"
+    elif [[ -n "$is_cmd_magick_any" ]]; then
+        thumb_create_from_pdf_magick "$@"
+    else
+        fail "$msg_cmd_not_found_pdfany"
     fi
 }
 
