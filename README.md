@@ -2,12 +2,12 @@
 <p align="center"><code>render-thumb-for.sh</code> renders preview images to the terminal; ~1000 LOC bash</p>
 <p align="center">
 <a href="https://github.com/iambumblehead/render-thumb-for.sh/workflows"><img src="https://github.com/iambumblehead/render-thumb-for.sh/workflows/test/badge.svg"></a>
-<a href="./LICENSE.md"><img src="https://img.shields.io/badge/license-ISC-blue.svg"></a>
+<a href="./LICENSE.md"><img src="https://img.shields.io/badge/license-GPLv3-blue.svg"></a>
 <a href="https://github.com/iambumblehead/render-thumb-for.sh/releases"><img src="https://img.shields.io/github/release/iambumblehead/render-thumb-for.sh.svg"></a>
 </p>
 
 > [!WARNING]
-> This project has no major releases and sources will change suddenly any time. No unit tests at this time.
+> This project has no major releases and sources will change suddenly any time. Few unit tests at this time.
 
 **render-thumb-for.sh renders images for various file types to the terminal.** It renders images from audio, font, video, pdf, epub, svg and other files --supporting both kitty and sixel formats. It detects available commands from the system for a small dependency tree,
  * `magick` sixel or `kitten icat` display,
