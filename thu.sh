@@ -413,19 +413,16 @@ paint () {
     img_path=$1
     img_wh=$2
 
-    if [[ "$3" == "$format_type_SIXEL" ]]; then
-        image_to_sixel_magick "$img_path" "$img_wh"
-        exit 0
-    fi
-
-    # kitten does not provide a 'geometry' option
-    # so image must have been preprocessed to fit desired geometry
-    if [[ "$3" == "$format_type_KITTY" ]]; then    
-        kitten icat --align left "$img_path"
-        exit 0
-    fi
-
-    fail "$msg_unsupported_display, format_type: \"$3\""
+    case "$3" in
+        "$format_type_SIXEL")
+            image_to_sixel_magick "$img_path" "$img_wh";;            
+        "$format_type_KITTY")
+            # kitten does not provide a 'geometry' option
+            # so image must have been preprocessed to fit desired geometry
+            kitten icat --align left "$img_path";;
+        *)
+            fail "$msg_unsupported_display, format_type: \"$3\""
+    esac
 }
 
 paint_downscale () {
