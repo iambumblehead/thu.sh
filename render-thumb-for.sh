@@ -22,14 +22,20 @@ is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
 is_cmd_unzip=$(command -v unzip)
+is_stdout_blocked=""
+[ ! -t 1 ] &&
+    is_stdout_blocked="true"
 
-mimeTypeSVG="svg"
-mimeTypeIMAGE="imgage"
-mimeTypeVIDEO="video"
-mimeTypeAUDIO="audio"
-mimeTypeFONT="font"
-mimeTypeEPUB="epub"
-mimeTypePDF="pdf"
+mime_type_SVG="svg"
+mime_type_IMAGE="imgage"
+mime_type_VIDEO="video"
+mime_type_AUDIO="audio"
+mime_type_FONT="font"
+mime_type_EPUB="epub"
+mime_type_PDF="pdf"
+
+format_type_SIXEL="SIXEL"
+format_type_KITTY="KITTY"
 
 # escape sequences used to query the terminal for details,
 #   https://www.mankier.com/7/foot-ctlseqs
@@ -54,25 +60,31 @@ msg_cmd_not_found_ffmpeg=$(msg_cmds_not_found "ffmpeg")
 msg_cmd_not_found_unzip=$(msg_cmds_not_found "unzip")
 msg_cmd_not_found_magickany=$(msg_cmds_not_found "magick" "convert")
 msg_cmd_not_found_identifyany=$(msg_cmds_not_found "exiftool" "identify")
-msgUnsupportedDisplay="image display is not supported"
-msgUnsupportedMime="mime type is not supported"
-msgUnknownWinSize="window size is unknown and could not be detected"
+msg_unsupported_width="unsupported width, :width"
+msg_unsupported_height="unsupported height, :height"
+msg_undetectable_cell_size="cell size undetectable, try -r option"
+msg_unsupported_display="image display is not supported"
+msg_unsupported_mime="mime type is not supported"
+msg_unknown_win_size="window size is unknown and could not be detected"
+msg_invalid_resolution="resolution invalid: :resolution"
+msg_epub_cover_not_found="epub cover image could not be located"
 
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
 resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
-wxhstr_re="^[[:digit:]]*[x][[:digit:]]*$"
-number_re="^[[:digit:]]*$"
+wxhstr_re="^[[:digit:]]+[x][[:digit:]]+$"
+number_re="^[[:digit:]]+$"
 
 cachedir="$HOME/.config/render-thumb-for"
 [ -n "${XDG_CONFIG_HOME}" ] &&
     cachedir="$XDG_CONFIG_HOME/render-thumb-for"
 
-is_stdout_ready=""
-[ -t 1 ] &&
-    is_stdout_ready="true"
+# do not use 'set -e' to full exit script process
+# generating ffmpeg output will trigger condition
+#
+# set -e
 
 mstimestamp () {
     # millisecond timestamp ex, 1710459031.000
@@ -81,44 +93,52 @@ mstimestamp () {
 
 sessid=$(mstimestamp)
 cells=
-zoom=1
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
 preprocess=""
 defaultw=1000
 version=0.0.8
-while getopts "cnpstiz:vh" opt; do
+while getopts "cr:bpstivh" opt; do
     case "${opt}" in
-        c) cells="true";; # use cell dimensions
-        i) sessid="${OPTARG}";; # sessid
-        n) is_stdout_ready="";; # ncurses using stdout, send esc codes to tty
+        c) cells="true";;
+        r) resolution="${OPTARG}"
+           if [[ ! "$resolution" =~ $wxhstr_re ]]; then
+               fail "${msg_invalid_resolution/:resolution/${OPTARG}}"
+           fi ;;
+        i) sessid="${OPTARG}";;
+        b) is_stdout_blocked="";;
         p) preprocess="true";; # skip main behaviour, write preprocessed data
-        s) cache="true";; # use a cache
-        t) timeoutss="${OPTARG}";; # use custom timeout, eg 2.5
-        z) zoom="${OPTARG}";; # for foot <= 1.16.2, use custom zoom factor, eg 2
+        s) cache="true";;
+        t) timeoutss="${OPTARG}";;
         v) echo "$version"; exit 0;;
         h|*) # Display help.
-            echo "-c use row and height as cell units"
-            echo "-n declare ncurses nested, send escape queries to tty"
+            echo "-c proces width and height as cell columns and lines"
+            echo "-r cell pixel resolution mostly for foot@1.16.2 ex, 10x21"
+            echo "-i define sesson 'id'"
+            echo "-b define stdout blocked (ncurses), send esc queries to tty"
             echo "-s configure cache ex, -s true"
             echo "-t use custom timeout (seconds) w/ shell query functions"
             echo "-v show version ($version)"
-            echo "-z configure zoom. affects calculated view area size ex, 2"
             exit 0;;
     esac
 done
 shift $(($OPTIND - 1))
+
+fail () {
+    printf '%s\n' "$1" >&2 ## Send message to stderr.
+    exit "${2-1}" ## Return a code specified by $2, or 1 by default.
+}
 
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
 escquery_sixel_issupport_get () {
     esc="$escXTERMsixelissupported"
 
-    if [[ -n "$is_stdout_ready" ]]; then
-        IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
-    else
+    if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
         IFS=";" read -d "c" -sra REPLY < /dev/tty
+    else
+        IFS=";" read -d "c" -sra REPLY -p "$esc" >&2
     fi
 
     for code in "${REPLY[@]}"; do
@@ -128,21 +148,22 @@ escquery_sixel_issupport_get () {
         fi
     done
 }
-is_sixel_support=$(escquery_sixel_issupport_get)
 
 escquery_cellwh_get () {
     esc="$escXTERMcellsize"
-    if [[ -n "$is_stdout_ready" ]]; then
-        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
-    else
+    if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
         IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+    else
+        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
-        printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+        printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
         exit 0
     fi
+
+    fail "$msg_undetectable_cell_size"
 }
 
 # empty return value if sixel is not-supported
@@ -152,16 +173,30 @@ escquery_sixel_maxwh_get () {
     fi
 
     esc="$escXTERMsixelmaxwh"
-    if [[ -n "$is_stdout_ready" ]]; then
-        IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" -p "$esc" >&2
-    else
+    if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
         IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" < /dev/tty
+    else
+        IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
-        printf '%s\n' "${REPLY[2]} ${REPLY[3]}"
+        printf '%s\n' "${REPLY[2]}x${REPLY[3]}"
     fi
+}
+
+image_display_format_get () {
+    if [[ -n "$(escquery_sixel_issupport_get)" ]]; then
+        printf '%s\n' "$format_type_SIXEL"
+        exit 0
+    fi
+
+    if [[ -n "$is_cmd_kitten_icat_support" ]]; then
+        printf '%s\n' "$format_type_KITTY"
+        exit 0
+    fi
+
+    fail "$msg_unsupported_display"
 }
 
 regex() {
@@ -171,8 +206,7 @@ regex() {
 
 zip_read_file () {
     if [[ -z "$is_cmd_unzip" ]]; then
-        echo "$msg_cmd_not_found_unzip";
-        exit 1
+        fail "$msg_cmd_not_found_unzip";
     fi
 
     unzip -p "$1" "$2"
@@ -180,8 +214,7 @@ zip_read_file () {
 
 zip_move_file_out () {
     if [[ -z "$is_cmd_unzip" ]]; then
-        echo "$msg_cmd_not_found_unzip";
-        exit 1
+        fail "$msg_cmd_not_found_unzip";
     fi
 
     unzip -q -o -j "$1" "$2" -d "$3"
@@ -199,7 +232,7 @@ cachedir_calibrate () {
 cachedir_path_get () {
     cachedir="$1"
     pathbase="$2"
-    pathwh="${3/ /x}"
+    pathwh="$3"
     pathextn="${4:1}" #remove dot eg .jpg -> jpg
     pathname="$pathbase.$pathwh.$pathextn"
 
@@ -211,22 +244,21 @@ file_type_get () {
 
     # font, pdf, video, audio, epub
     if [[ $mime =~ ^"image/svg" ]]; then
-        echo "$mimeTypeSVG"
+        echo "$mime_type_SVG"
     elif [[ $mime =~ ^"image/" ]]; then
-        echo "$mimeTypeIMAGE"
+        echo "$mime_type_IMAGE"
     elif [[ $mime =~ ^"video/" ]]; then
-        echo "$mimeTypeVIDEO"
+        echo "$mime_type_VIDEO"
     elif [[ $mime =~ ^"audio/" ]]; then
-        echo "$mimeTypeAUDIO"
+        echo "$mime_type_AUDIO"
     elif [[ $mime =~ ^"application/pdf" ]]; then
-        echo "$mimeTypePDF"
+        echo "$mime_type_PDF"
     elif [[ $mime =~ (ttf|truetype|opentype|woff|woff2|sfnt)$ ]]; then
-        echo "$mimeTypeFONT"
+        echo "$mime_type_FONT"
     elif [[ $mime =~ ^"application/epub" ]]; then
-        echo "$mimeTypeEPUB"
+        echo "$mime_type_EPUB"
     else
-        echo "$msgUnsupportedMime"
-        exit 1
+        fail "$msg_unsupported_mime"
     fi
 }
 
@@ -235,8 +267,7 @@ image_to_sixel_magick () {
     img_wh=$2
 
     if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
-        echo "$msg_cmd_not_found_magickany"
-        exit 1
+        fail "$msg_cmd_not_found_magickany"
     fi
 
     export MAGICK_OCL_DEVICE=true
@@ -244,7 +275,7 @@ image_to_sixel_magick () {
         magick \
             -background "rgba(0,0,0,0)" \
             "$img_path" \
-            -geometry "${img_wh/ /x}" \
+            -geometry "$img_wh" \
             sixel:-
         echo ""
         exit 0
@@ -254,7 +285,7 @@ image_to_sixel_magick () {
         convert \
             -channel rgba \
             -background "rgba(0,0,0,0)" \
-            -geometry "${img_wh/ /x}" \
+            -geometry "$img_wh" \
             "$img_path" \
             sixel:-
         echo ""
@@ -267,8 +298,7 @@ pdf_to_image_magick () {
     pdf_path=$2
 
     if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
-        echo "$msg_cmd_not_found_magickany"
-        exit 1
+        fail "$msg_cmd_not_found_magickany"
     fi
 
     if [[ -n "$is_cmd_magick" ]]; then
@@ -305,14 +335,9 @@ magick_font_to_image () {
     font_preview_multiline=${font_preview_text// /\\n}
     font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
 
-    if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
-        echo "$msg_cmd_not_found_magickany"
-        exit 1
-    fi
-
     if [[ -n "$is_cmd_magick" ]]; then
         magick \
-            -size "${font_wh_max/ /x}" \
+            -size "$font_wh_max" \
             -background "$font_bg_color" \
             -fill "$font_fg_color" \
             -font "$font_path" \
@@ -327,7 +352,7 @@ magick_font_to_image () {
 
     if [[ -n "$is_cmd_convert" ]]; then
         convert \
-            -size "${font_wh_max/ /x}" \
+            -size "$font_wh_max" \
             -background "$font_bg_color" \
             -fill "$font_fg_color" \
             -font "$font_path" \
@@ -339,6 +364,8 @@ magick_font_to_image () {
         echo "$font_thumb_path"
         exit 0
     fi
+
+    fail "$msg_cmd_not_found_magickany"
 }
 
 pdf_to_image () {
@@ -348,8 +375,7 @@ pdf_to_image () {
 
     if [[ -z "$is_cmd_mutool" && -z "$is_cmd_pdftoppm" &&
               -z "$is_cmd_magick_any" ]]; then
-        echo "$msg_cmd_not_found_pdfany"
-        exit 1
+        fail "$msg_cmd_not_found_pdfany"
     fi
 
     if [[ -n "$is_cmd_mutool" ]]; then
@@ -390,15 +416,19 @@ paint () {
     img_path=$1
     img_wh=$2
 
-    if [[ -n "$is_sixel_support" ]]; then
+    if [[ "$3" == "$format_type_SIXEL" ]]; then
         image_to_sixel_magick "$img_path" "$img_wh"
-    elif [[ -n "$is_cmd_kitten_icat_support" ]]; then
-        # kitten does not provide a 'geometry' option
-        # so image must have been preprocessed to fit desired geometry
-        kitten icat --align left "$img_path"
-    else
-        echo "$msgUnsupportedDisplay"
+        exit 0
     fi
+
+    # kitten does not provide a 'geometry' option
+    # so image must have been preprocessed to fit desired geometry
+    if [[ "$3" == "$format_type_KITTY" ]]; then    
+        kitten icat --align left "$img_path"
+        exit 0
+    fi
+
+    fail "$msg_unsupported_display"
 }
 
 paint_downscale () {
@@ -407,10 +437,10 @@ paint_downscale () {
     img_wh_native=$(img_wh_get "$img_path")
     img_wh_scaled=$(wh_scaled_get "$img_wh_native" "$img_wh_max")
 
-    paint "$img_path" "$img_wh_scaled"
+    paint "$img_path" "$img_wh_scaled" "$3"
 }
 
-wh_start_get () {
+wh_startOLD_get () {
     w="$1"
     h="$2"
     w_mul=$([ -n "$3" ] && echo "$3" || echo "1")
@@ -422,14 +452,69 @@ wh_start_get () {
     echo "$((${w} * ${w_mul})) $((${h} * ${h_mul}))"
 }
 
+# returns a goal pixel width and height for target image,
+#
+# starting width and height integers are optional
+# default uses %80 width of given view or terminal
+#  
+# (w, h, cells, wh_cell)
+wh_start_get () {
+    cells=$3
+    whcell=$4
+    wharea_pixels=$(wh_term_resolution_get)
+    wharea_cells=$(wh_term_columnsrows_get)
+    wharea_def=$([ -n "$3" ] && echo "$wharea_cells" || echo "$wharea_pixels")
+    w=$([ -n "$1" ] && echo "$1" || echo "$((${wharea_def%%x*} * 80 / 100))")
+    h=$([ -n "$2" ] && echo "$2" || echo "$((${wharea_def##*x} * 80 / 100))")
+
+    if [[ ! $w =~ $number_re ]]; then
+        fail "${msg_unsupported_width/:width/$w}"
+    fi
+
+    if [[ ! $h =~ $number_re ]]; then
+        fail "${msg_unsupported_height/:height/$h}"
+    fi
+
+    wh="${w}x${h}"
+    if [[ -n "$cells" ]]; then
+        wh=$(wh_pixels_from_cells_get "$wh" "$whcell")
+    fi
+
+    echo "$wh"
+}
+
+wh_cell_get () {
+    # if does not return for kitty...
+    escquery_cellwh_get
+}
+
+wh_sixelmax_get () {
+    sixelmaxwh=$(escquery_sixel_maxwh_get)
+    if [[ $sixelmaxwh =~ $wxhstr_re ]]; then
+        echo "$sixelmaxwh"
+    else
+        echo "${defaultw}x${defaultw}"
+    fi
+}
+
+wh_imagemax_get () {
+    if [[ -n "$is_cmd_kitten" ]]; then
+        echo ""
+
+        exit 0
+    fi
+
+    wh_sixelmax_get
+}
+
 wh_max_get () {
-    IFS=" " read -r -a wh <<< "$1"
+    IFS="x" read -r -a wh <<< "$1"
 
     echo "$((${wh[0]} > ${wh[1]} ? ${wh[0]} : ${wh[1]}))"
 }
 
 wh_pointsize_get () {
-    IFS=" " read -r -a wh <<< "$1"
+    IFS="x" read -r -a wh <<< "$1"
 
     min=$((${wh[0]} > ${wh[1]} ? ${wh[1]} : ${wh[0]}))
     mul=$((${wh[0]} > ${wh[1]} ? 9 : 10))
@@ -438,17 +523,17 @@ wh_pointsize_get () {
 }
 
 wh_scaled_get () {
-    IFS=" " read -r -a wh_bgn <<< "$1"
-    IFS=" " read -r -a wh_max <<< "$2"
+    IFS="x" read -r -a wh_bgn <<< "$1"
+    IFS="x" read -r -a wh_max <<< "$2"
     w_bgn=${wh_bgn[0]}
     w_max=${wh_max[0]}
     h_bgn=${wh_bgn[1]}
     h_max=${wh_max[1]}
 
     # if image is smaller, return native wh
-    if [ "$w_max" -gt "$w_bgn" ] && [ "$h_max" -gt "$h_bgn" ]; then
-        echo "$w_bgn $h_bgn"
-        return 1
+    if [[ "$w_max" -gt "$w_bgn" ]] && [[ "$h_max" -gt "$h_bgn" ]]; then
+        echo "${w_bgn}x${h_bgn}"
+        exit 0
     fi
 
     # multiply and divide by 100 to convert decimal and int
@@ -459,7 +544,7 @@ wh_scaled_get () {
         fin_h=$((($h_bgn * (($fin_w * 100) / $w_bgn)) / 100))
     fi
 
-    echo "$fin_w $fin_h"
+    echo "${fin_w}x${fin_h}"
 }
 
 # https://github.com/dylanaraps/pure-bash-bible
@@ -468,87 +553,48 @@ wh_term_columnsrows_get () {
     # (:;:) is a micro sleep to ensure the variables are
     # exported immediately.
     shopt -s checkwinsize; (:;:)
-    printf '%s\n' "$(tput cols) $(tput lines)"
+    printf '%s\n' "$(tput cols)x$(tput lines)"
 }
 
 wh_term_resolution_get () {
     esc="$escXTERMtermsize"
-    if [[ -n "$is_stdout_ready" ]]; then
-        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
-    else
+    if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
         IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+    else
+        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
-        printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+        printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
         exit 0
     fi
 
     esc="$escXTERMtermsizeTMUX"
-    if [[ -n "$is_stdout_ready" ]]; then
-        IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
-    else
+    if [[ -n "$is_stdout_blocked" ]]; then
         echo -e '\e[14t' > /dev/tty
         IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+    else
+        IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
     fi
 
     if [[ "${REPLY[1]}" =~ $number_re ]]; then
-        printf '%s\n' "${REPLY[2]} ${REPLY[1]}"
+        printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
         exit 0
     fi
 
-    echo "$msgUnknownWinSize"
-    exit 1
+    fail "$msg_unknown_win_size"
 }
 
 # get the width and height in pixels from columns and rows
 #
 # to avoid rounding issues that may result io too-small numbers,
 # resolution is calculated from the full set of columns and rows
-wh_fromrowscols_get () {
-    colw="$1"
-    rowh="$2"
-    IFS=" " read -r -a termwh <<< "$(wh_term_resolution_get)"
-    IFS=" " read -r -a termcr <<< "$(wh_term_columnsrows_get)"
+wh_pixels_from_cells_get () {
+    IFS="x" read -r -a wh <<< "$1"
+    IFS="x" read -r -a whcell <<< "$2"
 
-    if [[ -n "$colw" ]]; then # shellcheck disable=SC2323
-        pixelw=$((((((${termwh[0]} * 100) / ${termcr[0]}) * $colw) / 100)))
-    else
-        pixelw="$defaultw"
-    fi
-
-    if [[ -n "$rowh" ]]; then # shellcheck disable=SC2323
-        pixelh=$((((((${termwh[1]} * 100) / ${termcr[1]}) * $rowh) / 100)))
-    else
-        pixelh="$pixelw"
-    fi
-
-    echo "$(($pixelw * $zoom)) $(($pixelh * $zoom))"
-}
-
-# https://man.freebsd.org/cgi/man.cgi?query=xterm
-#
-# maxGraphicSize (class MaxGraphicSize)
-#  If xterm is configured to support ReGIS or SIXEL graphics, this
-#  resource controls the maximum size  of a graph which	can be
-#  displayed.
-#
-#  The default is "1000x1000" (given as width by height).
-wh_term_xterm_max_get () {
-    if [[ -n $maxGraphicSize ]] && [[ $maxGraphicSize =~ $wxhstr_re ]]; then
-        echo "${maxGraphicSize/x/ }"
-    else
-        echo "1000 1000"
-    fi
-}
-
-wh_term_scaled_get () {
-    if [[ $TERM =~ xterm ]]; then
-        wh_scaled_get "$1" "$(wh_term_xterm_max_get)"
-    else
-        echo "$1"
-    fi
+    echo "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
@@ -561,12 +607,13 @@ img_wh_identify_get () {
 
 img_wh_get () {
     if [[ -z "$is_cmd_exiftool" && -z "$is_cmd_identify" ]]; then
-        echo "$msg_cmd_not_found_identifyany"
-        exit 1
+        fail "$msg_cmd_not_found_identifyany"
     elif [[ -n "$is_cmd_exiftool" ]]; then
-        img_wh_exiftool_get "$1"
+        imgwh=$(img_wh_exiftool_get "$1")
+        printf '%s\n' "${imgwh/ /x}"
     elif [[ -n "$is_cmd_identify" ]]; then
-        img_wh_identify_get "$1"
+        imgwh=$(img_wh_identify_get "$1")
+        printf '%s\n' "${imgwh/ /x}"
     fi
 }
 
@@ -595,7 +642,7 @@ video_resolution_ffmpeg_parse () {
         fi
     done < <(printf '%s\n' "$1")
 
-    echo "${resolution_match/x/ }"
+    echo "$resolution_match"
 }
 
 epub_containerxml_parse_rootfiles () {
@@ -683,7 +730,9 @@ show_epub () {
             "$epub_manifest_cover" \
             "$cachedir"
 
-        paint_downscale "$epub_manifest_cover_dest" "$epub_wh_max"
+        paint_downscale "$epub_manifest_cover_dest" "$epub_wh_max" "$3"
+    else
+        fail "$msg_epub_cover_not_found"
     fi
 }
 
@@ -698,15 +747,14 @@ show_video () {
     vid_thumb_path=$(cachedir_path_get "$cachedir" "video" "w h" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
-        echo "$msg_cmd_not_found_ffmpeg";
-        exit 1
+        fail "$msg_cmd_not_found_ffmpeg";
     fi
 
     ffmpeg \
         -ss "$vid_frame_ss" \
         -i "$vid_path" \
         -frames:v 1 \
-        -s "${vid_wh_scaled/ /x}" \
+        -s "$vid_wh_scaled" \
         -pattern_type none \
         -update true \
         -f image2 \
@@ -714,7 +762,7 @@ show_video () {
         -hide_banner \
         -y "$vid_thumb_path"
 
-    paint "$vid_thumb_path" "$vid_wh_scaled"
+    paint "$vid_thumb_path" "$vid_wh_scaled" "$3"
 }
 
 show_audio () {
@@ -726,15 +774,14 @@ show_audio () {
     aud_thumb_path=$(cachedir_path_get "$cachedir" "audio" "w h" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
-        echo "$msg_cmd_not_found_ffmpeg";
-        exit 1
+        fail "$msg_cmd_not_found_ffmpeg"
     fi
 
     ffmpeg \
         -ss "00:00:00" \
         -i "$aud_path" \
         -frames:v 1 \
-        -s "${aud_wh_scaled/ /x}" \
+        -s "$aud_wh_scaled" \
         -pattern_type none \
         -update true \
         -f image2 \
@@ -742,64 +789,62 @@ show_audio () {
         -hide_banner \
         -y "$aud_thumb_path"
 
-    paint "$aud_thumb_path" "$aud_wh_scaled"
+    paint "$aud_thumb_path" "$aud_wh_scaled" "$3"
 }
 
 show_pdf () {
     pdf_path=$1
     pdf_wh_max=$2
+    pdf_thumb_path=$(pdf_to_image "$pdf_path" "$pdf_wh_max")
 
-    if pdf_thumb_path=$(pdf_to_image "$pdf_path" "$pdf_wh_max"); then
-        paint "$pdf_thumb_path" "$pdf_wh_max"
-    fi
+    paint "$pdf_thumb_path" "$pdf_wh_max" "$3"
 }
 
 show_font () {
     font_path=$1
     font_wh_max=$2
+    font_thumb_path=$(magick_font_to_image "$font_path" "$font_wh_max")
 
-    if font_thumb_path=$(magick_font_to_image "$font_path" "$font_wh_max"); then
-        paint "$font_thumb_path" "$font_wh_max"
-    fi
+    paint "$font_thumb_path" "$font_wh_max" "$3"
 }
 
 preprocess_get () {
     sixel_maxwh=$(escquery_sixel_maxwh_get)
-    sixel_maxwhseg="sixelmax-${sixel_maxwh/ /x}"
+    sixel_maxwhseg="sixelmax-${sixel_maxwh}"
     cellwh=$(escquery_cellwh_get)
-    cellwhseg="cell-${cellwh/ /x}"
+    cellwhseg="cell-${cellwh}"
 
     printf '%s\n' "v$version,$sessid,$cellwhseg,$sixel_maxwhseg"
 }
 
 start () {
     path=$1
-    if [ -n "$cells" ]; then
-        start_wh=$(wh_fromrowscols_get "$2" "$3")
-    else
-        start_wh=$(wh_start_get "$2" "$3" "$4" "$5")
-    fi
-    start_wh=$(wh_term_scaled_get "$start_wh")
+    wh_cell=$(wh_cell_get)
+    target_format=$(image_display_format_get)
+    target_wh_max=$(wh_imagemax_get)
+    target_wh_goal=$(wh_start_get "$2" "$3" "$cells" "$wh_cell")
+    [[ $target_wh_max =~ $wxhstr_re ]] &&
+        target_wh_goal=$(wh_scaled_get "$target_wh_goal" "$target_wh_max")
 
     if [ -n "$cache" ]; then
         cachedir_calibrate "$cachedir"
     fi
 
     case $(file_type_get "$path") in
-        "$mimeTypeSVG")
-            paint "$path" "$start_wh";;
-        "$mimeTypeIMAGE")
-            paint_downscale "$path" "$start_wh";;
-        "$mimeTypeVIDEO")
-            show_video "$path" "$start_wh";;
-        "$mimeTypeAUDIO")
-            show_audio "$path" "$start_wh";;
-        "$mimeTypeEPUB")
-            show_epub "$path" "$start_wh";;
-        "$mimeTypePDF")
-            show_pdf "$path" "$start_wh";;
-        "$mimeTypeFONT")
-            show_font "$path" "$start_wh";;
+        "$mime_type_SVG")
+            paint "$path" "$target_wh_goal" "$target_format";;
+        "$mime_type_IMAGE")
+            paint_downscale "$path" "$target_wh_goal" "$target_format";;
+        "$mime_type_VIDEO")
+            show_video "$path" "$target_wh_goal" "$target_format";;
+        "$mime_type_AUDIO")
+            show_audio "$path" "$target_wh_goal" "$target_format";;
+        "$mime_type_EPUB")
+            show_epub "$path" "$target_wh_goal" "$target_format";;
+        "$mime_type_PDF")
+            show_pdf "$path" "$target_wh_goal" "$target_format";;
+        "$mime_type_FONT")
+            show_font "$path" "$target_wh_goal" "$target_format";;
         *)
     esac
 }
