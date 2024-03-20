@@ -266,10 +266,6 @@ image_to_sixel_magick () {
     img_path=$1
     img_wh=$2
 
-    if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
-        fail "$msg_cmd_not_found_magickany"
-    fi
-
     export MAGICK_OCL_DEVICE=true
     if [[ -n "$is_cmd_magick" ]]; then
         magick \
@@ -278,10 +274,7 @@ image_to_sixel_magick () {
             -geometry "$img_wh" \
             sixel:-
         echo ""
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_convert" ]]; then
+    elif [[ -n "$is_cmd_convert" ]]; then
         convert \
             -channel rgba \
             -background "rgba(0,0,0,0)" \
@@ -289,126 +282,8 @@ image_to_sixel_magick () {
             "$img_path" \
             sixel:-
         echo ""
-        exit 0
-    fi
-}
-
-pdf_to_image_magick () {
-    pdf_thumb_path=$1
-    pdf_path=$2
-
-    if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
+    else
         fail "$msg_cmd_not_found_magickany"
-    fi
-
-    if [[ -n "$is_cmd_magick" ]]; then
-        magick \
-            "$pdf_thumb_path" \
-            -define pdf:thumbnail=true \
-            "$pdf_path"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_convert" ]]; then
-        convert \
-            "$pdf_thumb_path" \
-            -define pdf:thumbnail=true \
-            "$pdf_path"
-        exit 0
-    fi
-}
-
-# shellcheck disable=SC2116
-magick_font_to_image () {
-    font_path=$1
-    font_wh_max=$2
-    font_pointsize="$(wh_pointsize_get "$2")"
-    font_bg_color="rgba(0,0,0,1)"
-    font_fg_color="rgba(240,240,240,1)"
-    font_preview_text=$(
-        echo "ABCDEFGHIJKLM" \
-             "NOPQRSTUVWXYZ" \
-             "abcdefghijklm" \
-             "nopqrstuvwxyz" \
-             "1234567890" \
-             "!@$\%(){}[]")
-    font_preview_multiline=${font_preview_text// /\\n}
-    font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
-
-    if [[ -n "$is_cmd_magick" ]]; then
-        magick \
-            -size "$font_wh_max" \
-            -background "$font_bg_color" \
-            -fill "$font_fg_color" \
-            -font "$font_path" \
-            -pointsize "$font_pointsize" \
-            -gravity Center \
-            "label:${font_preview_multiline}" \
-            "$font_thumb_path"
-
-        echo "$font_thumb_path"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_convert" ]]; then
-        convert \
-            -size "$font_wh_max" \
-            -background "$font_bg_color" \
-            -fill "$font_fg_color" \
-            -font "$font_path" \
-            -pointsize "$font_pointsize" \
-            -gravity Center \
-            "label:${font_preview_multiline}" \
-            "$font_thumb_path"
-
-        echo "$font_thumb_path"
-        exit 0
-    fi
-
-    fail "$msg_cmd_not_found_magickany"
-}
-
-pdf_to_image () {
-    pdf_path=$1
-    pdf_wh_max=$2
-    pdf_thumb_path=""
-
-    if [[ -z "$is_cmd_mutool" && -z "$is_cmd_pdftoppm" &&
-              -z "$is_cmd_magick_any" ]]; then
-        fail "$msg_cmd_not_found_pdfany"
-    fi
-
-    if [[ -n "$is_cmd_mutool" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
-        mutool \
-            draw -i -F png \
-            -o "$pdf_thumb_path" "$pdf_path" 1 &> /dev/null
-
-        echo "$pdf_thumb_path"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_pdftoppm" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
-        # extension needs to be removed from output path "pattern" used here
-        pdftoppm \
-            -singlefile \
-            -f 1 -l 1 \
-            -scale-to "$(wh_max_get "$2")" \
-            -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
-
-        echo "$pdf_thumb_path"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_magick_any" ]]; then
-        pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
-
-        pdf_to_image_magick \
-            "$pdf_thumb_path" "$pdf_path"
-
-        echo "$pdf_thumb_path"
-        exit 0
     fi
 }
 
@@ -416,40 +291,16 @@ paint () {
     img_path=$1
     img_wh=$2
 
-    if [[ "$3" == "$format_type_SIXEL" ]]; then
-        image_to_sixel_magick "$img_path" "$img_wh"
-        exit 0
-    fi
-
-    # kitten does not provide a 'geometry' option
-    # so image must have been preprocessed to fit desired geometry
-    if [[ "$3" == "$format_type_KITTY" ]]; then    
-        kitten icat --align left "$img_path"
-        exit 0
-    fi
-
-    fail "$msg_unsupported_display"
-}
-
-paint_downscale () {
-    img_path=$1
-    img_wh_max=$2
-    img_wh_native=$(img_wh_get "$img_path")
-    img_wh_scaled=$(wh_scaled_get "$img_wh_native" "$img_wh_max")
-
-    paint "$img_path" "$img_wh_scaled" "$3"
-}
-
-wh_startOLD_get () {
-    w="$1"
-    h="$2"
-    w_mul=$([ -n "$3" ] && echo "$3" || echo "1")
-    h_mul=$([ -n "$4" ] && echo "$4" || echo "1")
-
-    [[ -z "$w" ]] && w="$defaultw"
-    [[ -z "$h" ]] && h="$w"
-
-    echo "$((${w} * ${w_mul})) $((${h} * ${h_mul}))"
+    case "$3" in
+        "$format_type_SIXEL")
+            image_to_sixel_magick "$img_path" "$img_wh";;            
+        "$format_type_KITTY")
+            # kitten does not provide a 'geometry' option
+            # so image must have been preprocessed to fit desired geometry
+            kitten icat --align left "$img_path";;
+        *)
+            fail "$msg_unsupported_display, format_type: \"$3\""
+    esac
 }
 
 # returns a goal pixel width and height for target image,
@@ -713,7 +564,7 @@ epub_rootfile_manifestcover_get () {
     echo "$epub_rxml_manifitemhref"
 }
 
-show_epub () {
+thumb_create_from_epub () {
     epub_path=$1
     epub_wh_max=$2
     #epub_ls=$(unzip -l "$1")
@@ -728,13 +579,13 @@ show_epub () {
             "$epub_manifest_cover" \
             "$cachedir"
 
-        paint_downscale "$epub_manifest_cover_dest" "$epub_wh_max" "$3"
+        thumb_create_from_image "$epub_manifest_cover_dest" "$epub_wh_max"
     else
         fail "$msg_epub_cover_not_found"
     fi
 }
 
-show_video () {
+thumb_create_from_video () {
     vid_path=$1
     vid_wh_max=$2
     vid_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
@@ -760,10 +611,10 @@ show_video () {
         -hide_banner \
         -y "$vid_thumb_path"
 
-    paint "$vid_thumb_path" "$vid_wh_scaled" "$3"
+    echo "$vid_thumb_path"
 }
 
-show_audio () {
+thumb_create_from_audio () {
     aud_path=$1
     aud_wh_max=$2
     aud_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
@@ -787,23 +638,198 @@ show_audio () {
         -hide_banner \
         -y "$aud_thumb_path"
 
-    paint "$aud_thumb_path" "$aud_wh_scaled" "$3"
+    echo "$aud_thumb_path"
 }
 
-show_pdf () {
+
+# thumb_create_from_pdf_magick $path $wh
+thumb_create_from_pdf_magick () {
     pdf_path=$1
-    pdf_wh_max=$2
-    pdf_thumb_path=$(pdf_to_image "$pdf_path" "$pdf_wh_max")
+    pdf_target_wh=$2
+    pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "$2" ".jpg")
 
-    paint "$pdf_thumb_path" "$pdf_wh_max" "$3"
+    if [[ -n "$is_cmd_magick" ]]; then
+        magick \
+            "${pdf_path}[0]" \
+            -define pdf:thumbnail=true \
+            -resize "$pdf_target_wh" \
+            "$pdf_thumb_path"
+    elif [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            "$pdf_path" \
+            -define pdf:thumbnail=true \
+            -resize "$pdf_target_wh" \
+            "$pdf_thumb_path"
+    else
+        fail "$msg_cmd_not_found_magickany"
+    fi
+
+    echo "$pdf_thumb_path"
 }
 
-show_font () {
+thumb_create_from_pdf_mutool () {
+    pdf_path=$1
+    pdf_target_wh=$2
+    pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".png")
+
+    mutool \
+        draw -i \
+        -r 72 \
+        -w "${pdf_target_wh%%x*}" \
+        -h "${pdf_target_wh##*x}" \
+        -F png \
+        -o "$pdf_thumb_path" "$pdf_path" 1 &> /dev/null
+
+    echo "$pdf_thumb_path"
+}
+
+thumb_create_from_pdf_pdftoppm () {
+    pdf_path=$1
+    pdf_target_wh=$2
+    pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "w h" ".jpg")
+    # extension needs to be removed from output path "pattern" used here
+    pdftoppm \
+        -singlefile \
+        -f 1 -l 1 \
+        -scale-to "$(wh_max_get "$2")" \
+        -jpeg "$pdf_path" "${pdf_thumb_path%.*}"
+
+    echo "$pdf_thumb_path"
+}
+
+# shellcheck disable=SC2116
+thumb_create_from_font () {
     font_path=$1
     font_wh_max=$2
-    font_thumb_path=$(magick_font_to_image "$font_path" "$font_wh_max")
+    font_pointsize="$(wh_pointsize_get "$2")"
+    font_bg_color="rgba(0,0,0,1)"
+    font_fg_color="rgba(240,240,240,1)"
+    font_preview_text=$(
+        echo "ABCDEFGHIJKLM" \
+             "NOPQRSTUVWXYZ" \
+             "abcdefghijklm" \
+             "nopqrstuvwxyz" \
+             "1234567890" \
+             "!@$\%(){}[]")
+    font_preview_multiline=${font_preview_text// /\\n}
+    font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
 
-    paint "$font_thumb_path" "$font_wh_max" "$3"
+    if [[ -n "$is_cmd_magick" ]]; then
+        magick \
+            -size "$font_wh_max" \
+            -background "$font_bg_color" \
+            -fill "$font_fg_color" \
+            -font "$font_path" \
+            -pointsize "$font_pointsize" \
+            -gravity Center \
+            "label:${font_preview_multiline}" \
+            "$font_thumb_path"
+
+        echo "$font_thumb_path"
+        exit 0
+    fi
+
+    if [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            -size "$font_wh_max" \
+            -background "$font_bg_color" \
+            -fill "$font_fg_color" \
+            -font "$font_path" \
+            -pointsize "$font_pointsize" \
+            -gravity Center \
+            "label:${font_preview_multiline}" \
+            "$font_thumb_path"
+
+        echo "$font_thumb_path"
+        exit 0
+    fi
+
+    fail "$msg_cmd_not_found_magickany"
+}
+
+# thumb_create_from_pdf $path $wh
+thumb_create_from_pdf () {
+    if [[ -n "$is_cmd_mutool" ]]; then
+        thumb_create_from_pdf_mutool "$@"
+    elif [[ -n "$is_cmd_pdftoppm" ]]; then
+        thumb_create_from_pdf_pdftoppm "$@"
+    elif [[ -n "$is_cmd_magick_any" ]]; then
+        thumb_create_from_pdf_magick "$@"
+    else
+        fail "$msg_cmd_not_found_pdfany"
+    fi
+}
+
+thumb_create_from_image () {
+    oimg_path=$1
+    oimg_target_wh=$2
+    oimg_wh_native=$(img_wh_get "$oimg_path")
+    oimg_wh_scaled=$(wh_scaled_get "$oimg_wh_native" "$oimg_target_wh")
+    oimg_thumb_path=$(cachedir_path_get "$cachedir" "img" "$2" ".png")
+
+    if [[ -n "$is_cmd_magick" ]]; then
+        magick \
+            "$oimg_path" \
+            -resize "$oimg_wh_scaled" \
+            "$oimg_thumb_path"
+    elif [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            "$oimg_path" \
+            -resize "$oimg_wh_scaled" \
+            "$oimg_thumb_path"
+    else
+        fail "$msg_cmd_not_found_magickany"
+    fi
+
+    echo "$oimg_thumb_path"
+}
+
+thumb_create_from_svg () {
+    svgimg_path=$1
+    svgimg_target_wh=$2
+    svgimg_thumb_path=$(cachedir_path_get "$cachedir" "svg" "$2" ".png")
+
+    if [[ -n "$is_cmd_magick" ]]; then
+        magick \
+            -background "rgba(0,0,0,0)" \
+            "$svgimg_path" \
+            -geometry "$svgimg_target_wh" \
+            "$svgimg_thumb_path"
+    elif [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            -channel rgba \
+            -background "rgba(0,0,0,0)" \
+            -geometry "$svgimg_target_wh" \
+            "$svgimg_path" \
+            "$svgimg_thumb_path"
+    else
+        fail "$msg_cmd_not_found_magickany"
+    fi
+
+    echo "$svgimg_thumb_path"
+}
+
+thumb_create_from () {
+    path="$1"
+    wh_goal="$2"
+
+    case $(file_type_get "$path") in
+        "$mime_type_SVG")
+            thumb_create_from_svg "$path" "$wh_goal";;
+        "$mime_type_IMAGE")
+            thumb_create_from_image "$path" "$wh_goal";;
+        "$mime_type_VIDEO")
+            thumb_create_from_video "$path" "$wh_goal";;
+        "$mime_type_AUDIO")
+            thumb_create_from_audio "$path" "$wh_goal";;
+        "$mime_type_EPUB")
+            thumb_create_from_epub "$path" "$wh_goal";;
+        "$mime_type_PDF")
+            thumb_create_from_pdf "$path" "$wh_goal";;
+        "$mime_type_FONT")
+            thumb_create_from_font "$path" "$wh_goal";;
+        *)
+    esac
 }
 
 preprocess_get () {
@@ -828,23 +854,10 @@ start () {
         cachedir_calibrate "$cachedir"
     fi
 
-    case $(file_type_get "$path") in
-        "$mime_type_SVG")
-            paint "$path" "$target_wh_goal" "$target_format";;
-        "$mime_type_IMAGE")
-            paint_downscale "$path" "$target_wh_goal" "$target_format";;
-        "$mime_type_VIDEO")
-            show_video "$path" "$target_wh_goal" "$target_format";;
-        "$mime_type_AUDIO")
-            show_audio "$path" "$target_wh_goal" "$target_format";;
-        "$mime_type_EPUB")
-            show_epub "$path" "$target_wh_goal" "$target_format";;
-        "$mime_type_PDF")
-            show_pdf "$path" "$target_wh_goal" "$target_format";;
-        "$mime_type_FONT")
-            show_font "$path" "$target_wh_goal" "$target_format";;
-        *)
-    esac
+    thumb_path=$(thumb_create_from "$path" "$target_wh_goal")
+    if [[ -n "$thumb_path" ]]; then
+        paint "$thumb_path" "$target_wh_goal" "$target_format"
+    fi
 }
 
 # do not run main when sourcing the script
