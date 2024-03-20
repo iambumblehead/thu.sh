@@ -148,7 +148,6 @@ escquery_sixel_issupport_get () {
         fi
     done
 }
-#is_sixel_support=$(escquery_sixel_issupport_get)
 
 escquery_cellwh_get () {
     esc="$escXTERMcellsize"
