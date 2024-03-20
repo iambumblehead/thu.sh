@@ -23,5 +23,5 @@ test_wh_get_returns_WxH () {
 }
 
 setup_suite() {
-    source ../render-thumb-for.sh
+    source ../thu.sh
 }

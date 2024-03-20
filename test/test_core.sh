@@ -15,11 +15,11 @@ test_asset_latest_version_number_used () {
     version_changelog_re="\* ([[:digit:]]*\.[[:digit:]]*\.[[:digit:]]*)"
     version_script_re="\version=([[:digit:]]*\.[[:digit:]]*\.[[:digit:]]*)"
     version_changelog=$(regex "$(cat ../CHANGELOG.md)" "$version_changelog_re")
-    version_script=$(regex "$(cat ../render-thumb-for.sh)" "$version_script_re")
+    version_script=$(regex "$(cat ../thu.sh)" "$version_script_re")
 
     assert_equals "$version_changelog" "$version_script" \
                   "should use same version, script and changelog"
 
-    assert_equals  "$version_changelog" "$(../render-thumb-for.sh -v)" \
+    assert_equals  "$version_changelog" "$(../thu.sh -v)" \
                    "should use same version, script -v and changelog"    
 }

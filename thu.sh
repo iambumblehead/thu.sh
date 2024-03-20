@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 #
 # ex,
-# ./render-thumb-for.sh /path/to/file.png 800 400
-# ./render-thumb-for.sh /path/to/file.pdf
-# ./render-thumb-for.sh /path/to/file.ttf
-# ./render-thumb-for.sh /path/to/file.mp4 1020 780
+# ./thu.sh /path/to/file.png 800 400
+# ./thu.sh /path/to/file.pdf
+# ./thu.sh /path/to/file.ttf
+# ./thu.sh /path/to/file.mp4 1020 780
 #
 # Exit code 0 Success
 # Exit code 1 General errors, Miscellaneous errors
@@ -77,9 +77,9 @@ hrefattr_re="href=['\"]([^'\"]*)['\"]"
 wxhstr_re="^[[:digit:]]+[x][[:digit:]]+$"
 number_re="^[[:digit:]]+$"
 
-cachedir="$HOME/.config/render-thumb-for"
+cachedir="$HOME/.config/thu"
 [ -n "${XDG_CONFIG_HOME}" ] &&
-    cachedir="$XDG_CONFIG_HOME/render-thumb-for"
+    cachedir="$XDG_CONFIG_HOME/thu"
 
 # do not use 'set -e' to full exit script process
 # generating ffmpeg output will trigger condition
