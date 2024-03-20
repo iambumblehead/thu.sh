@@ -4,6 +4,7 @@
    * added [less trivial tests](https://github.com/iambumblehead/render-thumb-for.sh/pull/33)
    * support returning queried data [using -p arg](https://github.com/iambumblehead/render-thumb-for.sh/pull/34)
    * support [both imagemagick 7 an 8](https://github.com/iambumblehead/render-thumb-for.sh/pull/36)
+   * use cell size rather than window to [construct view area size](https://github.com/iambumblehead/render-thumb-for.sh/pull/37)
  * 0.0.7 _Mar.14.2024_
    * improve [support for xterm](https://github.com/iambumblehead/render-thumb-for.sh/pull/25)
    * added [support for cell units](https://github.com/iambumblehead/render-thumb-for.sh/pull/26)
