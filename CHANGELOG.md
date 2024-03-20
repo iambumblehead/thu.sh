@@ -6,6 +6,7 @@
    * support [both imagemagick 7 an 8](https://github.com/iambumblehead/thu.sh/pull/36)
    * use cell size rather than window to [construct view area size.](https://github.com/iambumblehead/thu.sh/pull/37) Continue using window size query when when preview size un-specified.
    * use [GPLv3 license](https://github.com/iambumblehead/thu.sh/pull/40)
+   * rename [render-thumb-for.sh to thu.sh](https://github.com/iambumblehead/thu.sh/pull/41)
  * 0.0.7 _Mar.14.2024_
    * improve [support for xterm](https://github.com/iambumblehead/thu.sh/pull/25)
    * added [support for cell units](https://github.com/iambumblehead/thu.sh/pull/26)
