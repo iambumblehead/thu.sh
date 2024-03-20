@@ -10,6 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+    - run: sudo apt-get install -y exiftool      
     - name: Unit testing with bash_unit
       run: |
         bash <(curl -s https://raw.githubusercontent.com/pgrange/bash_unit/master/install.sh)
