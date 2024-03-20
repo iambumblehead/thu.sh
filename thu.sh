@@ -157,6 +157,7 @@ is_foot_lte_1_16_2_get () {
     fi
 }
 
+# shellcheck disable=SC2116
 is_foot_lte_1_16_2_message_get () {
     footmsg=$(
         echo "WARNING: When window resolution is scaled, this version of foot" \
