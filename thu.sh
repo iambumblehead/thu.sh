@@ -291,29 +291,29 @@ image_to_sixel_magick () {
     fail "$msg_cmd_not_found_magickany"
 }
 
-pdf_to_image_magick () {
-    pdf_thumb_path=$1
-    pdf_path=$2
+# thumb_create_from_pdf $path $wh
+thumb_create_from_pdf () {
+    pdf_path=$1
+    pdf_target_wh=$2
+    pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "$2" ".jpg")
 
-    if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
+    if [[ ! -n "$is_cmd_magick" ]]; then
+        magick \
+            "${pdf_path}[0]" \
+            -define pdf:thumbnail=true \
+            -resize "$pdf_target_wh" \
+            "$pdf_thumb_path"
+    elif [[ -n "$is_cmd_convert" ]]; then
+        convert \
+            "$pdf_path" \
+            -define pdf:thumbnail=true \
+            -resize "$pdf_target_wh" \
+            "$pdf_thumb_path"
+    else
         fail "$msg_cmd_not_found_magickany"
     fi
 
-    if [[ -n "$is_cmd_magick" ]]; then
-        magick \
-            "$pdf_thumb_path" \
-            -define pdf:thumbnail=true \
-            "$pdf_path"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_convert" ]]; then
-        convert \
-            "$pdf_thumb_path" \
-            -define pdf:thumbnail=true \
-            "$pdf_path"
-        exit 0
-    fi
+    echo "$pdf_thumb_path"
 }
 
 # shellcheck disable=SC2116
@@ -788,14 +788,6 @@ show_audio () {
     paint "$aud_thumb_path" "$aud_wh_scaled" "$3"
 }
 
-show_pdf () {
-    pdf_path=$1
-    pdf_wh_max=$2
-    pdf_thumb_path=$(pdf_to_image "$pdf_path" "$pdf_wh_max")
-
-    paint "$pdf_thumb_path" "$pdf_wh_max" "$3"
-}
-
 preprocess_get () {
     sixel_maxwh=$(escquery_sixel_maxwh_get)
     sixel_maxwhseg="sixelmax-${sixel_maxwh}"
@@ -830,7 +822,7 @@ start () {
         "$mime_type_EPUB")
             show_epub "$path" "$target_wh_goal" "$target_format";;
         "$mime_type_PDF")
-            show_pdf "$path" "$target_wh_goal" "$target_format";;
+            thumb_path=$(thumb_create_from_pdf "$path" "$target_wh_goal");;
         "$mime_type_FONT")
             thumb_path=$(thumb_create_from_font "$path" "$target_wh_goal");;
         *)
