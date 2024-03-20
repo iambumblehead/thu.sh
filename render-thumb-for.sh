@@ -66,6 +66,7 @@ msg_undetectable_cell_size="cell size undetectable, try -r option"
 msg_unsupported_display="image display is not supported"
 msg_unsupported_mime="mime type is not supported"
 msg_unknown_win_size="window size is unknown and could not be detected"
+msg_invalid_resolution="resolution invalid: :resolution"
 msg_epub_cover_not_found="epub cover image could not be located"
 
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
@@ -92,7 +93,6 @@ mstimestamp () {
 
 sessid=$(mstimestamp)
 cells=
-#zoom=1
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
 preprocess=""
@@ -103,7 +103,7 @@ while getopts "cr:bpstivh" opt; do
         c) cells="true";;
         r) resolution="${OPTARG}"
            if [[ ! "$resolution" =~ $wxhstr_re ]]; then
-               resolution="${OPTARG}"
+               fail "${msg_invalid_resolution/:resolution/${OPTARG}}"
            fi ;;
         i) sessid="${OPTARG}";;
         b) is_stdout_blocked="";;
