@@ -266,10 +266,6 @@ image_to_sixel_magick () {
     img_path=$1
     img_wh=$2
 
-    if [[ -z "$is_cmd_magick" && -z "$is_cmd_convert" ]]; then
-        fail "$msg_cmd_not_found_magickany"
-    fi
-
     export MAGICK_OCL_DEVICE=true
     if [[ -n "$is_cmd_magick" ]]; then
         magick \
@@ -291,6 +287,8 @@ image_to_sixel_magick () {
         echo ""
         exit 0
     fi
+
+    fail "$msg_cmd_not_found_magickany"
 }
 
 pdf_to_image_magick () {
@@ -319,7 +317,7 @@ pdf_to_image_magick () {
 }
 
 # shellcheck disable=SC2116
-magick_font_to_image () {
+thumb_create_from_font () {
     font_path=$1
     font_wh_max=$2
     font_pointsize="$(wh_pointsize_get "$2")"
@@ -428,7 +426,7 @@ paint () {
         exit 0
     fi
 
-    fail "$msg_unsupported_display"
+    fail "$msg_unsupported_display, format_type: \"$3\""
 }
 
 paint_downscale () {
@@ -798,14 +796,6 @@ show_pdf () {
     paint "$pdf_thumb_path" "$pdf_wh_max" "$3"
 }
 
-show_font () {
-    font_path=$1
-    font_wh_max=$2
-    font_thumb_path=$(magick_font_to_image "$font_path" "$font_wh_max")
-
-    paint "$font_thumb_path" "$font_wh_max" "$3"
-}
-
 preprocess_get () {
     sixel_maxwh=$(escquery_sixel_maxwh_get)
     sixel_maxwhseg="sixelmax-${sixel_maxwh}"
@@ -842,9 +832,13 @@ start () {
         "$mime_type_PDF")
             show_pdf "$path" "$target_wh_goal" "$target_format";;
         "$mime_type_FONT")
-            show_font "$path" "$target_wh_goal" "$target_format";;
+            thumb_path=$(thumb_create_from_font "$path" "$target_wh_goal");;
         *)
     esac
+
+    if [[ -n "$thumb_path" ]]; then
+        paint "$thumb_path" "$target_wh_goal" "$target_format"
+    fi
 }
 
 # do not run main when sourcing the script
