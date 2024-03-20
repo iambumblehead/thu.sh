@@ -7,7 +7,8 @@
    * use cell size rather than window to [construct view area size.](https://github.com/iambumblehead/thu.sh/pull/37) Continue using window size query when when preview size un-specified.
    * use [GPLv3 license](https://github.com/iambumblehead/thu.sh/pull/40)
    * rename [render-thumb-for.sh to thu.sh](https://github.com/iambumblehead/thu.sh/pull/41)
-   * separate [image-generation from image-display.](https://github.com/iambumblehead/thu.sh/pull/41) Will allow more control with caching and session state, testing etc.
+   * separate [image-generation from image-display.](https://github.com/iambumblehead/thu.sh/pull/42) Will allow more control with caching and session state, testing etc.
+   * detect foot version lte 1.16.2 and [show warning message.](https://github.com/iambumblehead/thu.sh/pull/43)
  * 0.0.7 _Mar.14.2024_
    * improve [support for xterm](https://github.com/iambumblehead/thu.sh/pull/25)
    * added [support for cell units](https://github.com/iambumblehead/thu.sh/pull/26)
