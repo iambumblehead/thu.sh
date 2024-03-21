@@ -36,6 +36,7 @@ mime_type_PDF="pdf"
 
 format_type_SIXEL="SIXEL"
 format_type_KITTY="KITTY"
+format_type_NONE="NONE"
 
 # escape sequences used to query the terminal for details,
 #   https://www.mankier.com/7/foot-ctlseqs
@@ -79,30 +80,49 @@ wxhstr_re="^[[:digit:]]+[x][[:digit:]]+$"
 numint_re="^[[:digit:]]+$"
 numfl_re="^[-+]?[[:digit:]]+\.?[[:digit:]]*$"
 version_re="([[:digit:]]+[\.][[:digit:]]+[\.][[:digit:]]+)"
+sesscellwh_re="cellwh=([[:digit:]]+[x][[:digit:]]+)"
+sesssixelmaxwh_re="sixelmaxwh=([[:digit:]]+[x][[:digit:]]+)"
+sessdisplayformat_re="displayformat=(SIXEL|KITTY|NONE)"
 
 cachedir="$HOME/.config/thu"
 [ -n "${XDG_CONFIG_HOME}" ] &&
     cachedir="$XDG_CONFIG_HOME/thu"
+
+print_help () {
+    echo "-c cell, proces width and height as cell columns and lines"
+    echo "-r resolution, cell pixel resolution mostly for foot@1.16.2 ex, 10x21"
+    echo "-i id, define sesson 'id'"
+    echo "-b blocked, define stdout blocked (ncurses), send esc queries to tty"
+    echo "-j skip main behaviour, write session data"
+    echo "-k define session from string (same format seen with '-j')"
+    echo "-l define session from previous '-j' generated session data"
+    echo "-s configure cache ex, -s true"
+    echo "-t timeout, use custom timeout (seconds) w/ shell query functions"
+    echo "-v version, show version ($version)"
+    echo "-z zoom, zoom number applied to cell area, ex '1' or '2'"
+}
 
 # do not use 'set -e' to full exit script process
 # generating ffmpeg output will trigger condition
 #
 # set -e
 
-mstimestamp () {
-    # millisecond timestamp ex, 1710459031.000
-    printf "%.3f\n" $((${EPOCHREALTIME/.} / 1000000))
-}
+# printf -v TODAY "%(%F)T"; printf '%s\n' "$TODAY"
+# mstimestamp () {
+#     # millisecond timestamp ex, 1710459031.000
+#     printf "%.3f\n" $((${EPOCHREALTIME/.} / 1000000))
+# }
 
-sessid=$(mstimestamp)
+sessid="sessdefault"
 zoom=
 cells=
+sess=""
 cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
-preprocess=""
+sessbuild=""
 defaultw=1000
 version=0.0.8
-while getopts "cr:bpstivz:h" opt; do
+while getopts "cr:bkl:jstivz:h" opt; do
     case "${opt}" in
         c) cells="true";;
         r) resolution="${OPTARG}"
@@ -110,8 +130,10 @@ while getopts "cr:bpstivz:h" opt; do
                fail "${msg_invalid_resolution/:resolution/${OPTARG}}"
            fi ;;
         i) sessid="${OPTARG}";;
-        b) is_stdout_blocked="";;
-        p) preprocess="true";; # skip main behaviour, write preprocessed data
+        b) is_stdout_blocked="true";;
+        j) sessbuild="true";;
+        k) sess=$(cat "$cachedir/thu.sh.sess");;
+        l) sess="${OPTARG}";;
         s) cache="true";;
         t) timeoutss="${OPTARG}";;
         z) zoom="${OPTARG%.*}" # remove after decimal for now
@@ -119,15 +141,7 @@ while getopts "cr:bpstivz:h" opt; do
                fail "${msg_invalid_zoom/:zoom/${OPTARG}}"
            fi ;;
         v) echo "$version"; exit 0;;
-        h|*) # Display help.
-            echo "-c proces width and height as cell columns and lines"
-            echo "-r cell pixel resolution mostly for foot@1.16.2 ex, 10x21"
-            echo "-i define sesson 'id'"
-            echo "-b define stdout blocked (ncurses), send esc queries to tty"
-            echo "-s configure cache ex, -s true"
-            echo "-t use custom timeout (seconds) w/ shell query functions"
-            echo "-v show version ($version)"
-            exit 0;;
+        h|*) print_help; exit 0;;
     esac
 done
 shift $(($OPTIND - 1))
@@ -208,9 +222,7 @@ escquery_cellwh_get () {
     fi
 
     if [[ "${REPLY[1]}" =~ $numint_re ]]; then
-        z=$([ -n "$zoom" ] && echo "$zoom" || echo "1")
-
-        printf '%s\n' "$((${REPLY[2]}*$z))x$((${REPLY[1]}*$z))"
+        printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
     else
         fail "$msg_undetectable_cell_size"
     fi
@@ -236,12 +248,15 @@ escquery_sixel_maxwh_get () {
 }
 
 image_display_format_get () {
-    if [[ -n "$(escquery_sixel_issupport_get)" ]]; then
+    sessdisplayformat=$(regex "$1" "$sessdisplayformat_re")
+    if [[ -n "$sessdisplayformat" ]]; then
+        printf '%s\n' "$sessdisplayformat"
+    elif [[ -n "$(escquery_sixel_issupport_get)" ]]; then
         printf '%s\n' "$format_type_SIXEL"
     elif [[ -n "$is_cmd_kitten_icat_support" ]]; then
         printf '%s\n' "$format_type_KITTY"
     else
-        fail "$msg_unsupported_display"
+        printf '%s\n' "$format_type_NONE"
     fi
 }
 
@@ -358,7 +373,8 @@ paint () {
 wh_start_get () {
     cells=$3
     whcell=$4
-    wharea_pixels=$(wh_term_resolution_get)
+    # term_resolution is from esc query, do not query unless needed
+    wharea_pixels=$([ -z "$3" ] && wh_term_resolution_get)
     wharea_cells=$(wh_term_columnsrows_get)
     wharea_def=$([ -n "$3" ] && echo "$wharea_cells" || echo "$wharea_pixels")
     w=$([ -n "$1" ] && echo "$1" || echo "$((${wharea_def%%x*} * 80 / 100))")
@@ -380,9 +396,27 @@ wh_start_get () {
     echo "$wh"
 }
 
+# wh_apply_zoom $WxH $zoom
+wh_apply_zoom () {
+    IFS="x" read -ra wh <<< "$1"
+    z=$([ -n "$2" ] && echo "$2" || echo "1")
+
+    printf '%s\n' "$((${wh[0]}*$z))x$((${wh[1]}*$z))"
+}
+
+# if cellwh can be probed from session string,
+#   return session cellwh (ex, cellwh=10x21 => 10x21)
+# else
+#   use escape query to obtain cellwh from terminal
 wh_cell_get () {
-    # if does not return for kitty...
-    escquery_cellwh_get
+    sesscellwh=$(regex "$1" "$sesscellwh_re")
+    if [[ -n "$sesscellwh" ]]; then
+        cellwh="$sesscellwh"
+    else
+        cellwh=$(escquery_cellwh_get)
+    fi
+
+    wh_apply_zoom "$cellwh" "$zoom"
 }
 
 wh_sixelmax_get () {
@@ -395,13 +429,14 @@ wh_sixelmax_get () {
 }
 
 wh_imagemax_get () {
-    if [[ -n "$is_cmd_kitten" ]]; then
+    sesssixelmaxwh=$(regex "$1" "$sesssixelmaxwh_re")
+    if [[ -n "$sesssixelmaxwh" ]]; then
+        echo "$sesssixelmaxwh"
+    elif [[ -n "$is_cmd_kitten" ]]; then
         echo ""
-
-        exit 0
+    else
+        wh_sixelmax_get
     fi
-
-    wh_sixelmax_get
 }
 
 wh_max_get () {
@@ -878,31 +913,38 @@ thumb_create_from () {
     esac
 }
 
-preprocess_get () {
-    sixel_maxwh=$(escquery_sixel_maxwh_get)
-    sixel_maxwhseg="sixelmax-${sixel_maxwh}"
-    cellwh=$(escquery_cellwh_get)
-    cellwhseg="cell-${cellwh}"
+# shellcheck disable=SC2116
+sessbuild_get () {
+    sess=$(
+        echo "thu.sh=v$version" \
+             "sess=$sessid" \
+             "displayformat=$(image_display_format_get)" \
+             "sixelmaxwh=$(wh_sixelmax_get)" \
+             "cellwh=$(wh_cell_get)")
+    sess="${sess// /,}"
 
-    printf '%s\n' "v$version,$sessid,$cellwhseg,$sixel_maxwhseg"
+    cachedir_calibrate "$cachedir" "$cache"
+
+    # write session to file
+    printf '%s\n' "$sess" > "$cachedir/thu.sh.sess"
+    printf '%s\n' "$sess"
 }
 
 start () {
     path=$1
-    wh_cell=$(wh_cell_get)
-    target_format=$(image_display_format_get)
-    target_wh_max=$(wh_imagemax_get)
+    wh_cell=$(wh_cell_get "$sess")
+    target_format=$(image_display_format_get "$sess")
+    target_wh_max=$(wh_imagemax_get "$sess")
     target_wh_goal=$(wh_start_get "$2" "$3" "$cells" "$wh_cell")
+
     [[ $target_wh_max =~ $wxhstr_re ]] &&
         target_wh_goal=$(wh_scaled_get "$target_wh_goal" "$target_wh_max")
 
-    if [[ -n $(is_foot_lte_1_16_2_get) && -z "$zoom" ]]; then
+    if [[ -n $(is_foot_lte_1_16_2_get) && -z "$zoom" && -z "$sessbuild" ]]; then
         is_foot_lte_1_16_2_message_get
     fi
 
-    if [ -n "$cache" ]; then
-        cachedir_calibrate "$cachedir"
-    fi
+    cachedir_calibrate "$cachedir" "$cache"
 
     thumb_path=$(thumb_create_from "$path" "$target_wh_goal")
     if [[ -n "$thumb_path" ]]; then
@@ -910,9 +952,10 @@ start () {
     fi
 }
 
+# test: thu.sh -ckz 3 ./Guix_logo.svg
 # do not run main when sourcing the script
-if [[ -n "$preprocess" ]]; then
-    preprocess_get "$@"
+if [[ -n "$sessbuild" ]]; then
+    sessbuild_get "$@"
 elif [[ "$0" == "${BASH_SOURCE[0]}" ]]; then
     start "$@"
 else
