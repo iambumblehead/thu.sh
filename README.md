@@ -1,4 +1,4 @@
-<h3 align="center"><img src="./test/render-for.demo.gif" alt="demo" height="400px"></h3>
+<h3 align="center"><img src="./test/thu.sh.demo.gif" alt="demo" height="400px"></h3>
 <p align="center"><code>thu.sh</code> renders preview images to the terminal; ~1000 LOC bash</p>
 <p align="center">
 <a href="./thu.sh"><img src="https://img.badgesize.io/iambumblehead/thu.sh/main/thu.sh.svg?compression=gzip"></a>
@@ -42,7 +42,7 @@ thu.sh /path/to/book.epub
 **Add sixel image preview** to [vifm file manager.][10] Instructions [at the wiki.][11]
 
 <div align="left">
-<img src="./test/render-for-vifm.gif" alt="vifm" height="220px"> <img src="./test/render-for-miller.png" alt="vifm" height="220px">
+<img src="./test/thu.sh.vifm.gif" alt="vifm" height="220px"> <img src="./test/thu.sh.vifm.miller.png" alt="vifm" height="220px">
 </div>
 
 
