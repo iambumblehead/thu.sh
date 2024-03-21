@@ -7,9 +7,6 @@
 <a href="https://github.com/iambumblehead/thu.sh/releases"><img src="https://img.shields.io/github/release/iambumblehead/thu.sh.svg"></a>
 </p>
 
-> [!WARNING]
-> This project has no major releases and sources will change suddenly any time. Few unit tests at this time.
-
 **thu.sh renders images from audio, font, video, pdf, epub, svg** and other files --supporting both kitty and sixel formats. It detects available commands from the system for a small dependency tree,
  * `magick` sixel or `kitten icat` display,
  * `mutool`, `pdftoppm` or `magick` pdf,
@@ -45,7 +42,7 @@ thu.sh /path/to/book.epub
 **Add sixel image preview** to [vifm file manager.][10] Instructions [at the wiki.][11]
 
 <div align="left">
-<img src="./test/render-for-vifm.gif" alt="vifm" height="240px"> <img src="./test/render-for-miller.png" alt="vifm" height="240px">
+<img src="./test/render-for-vifm.gif" alt="vifm" height="220px"> <img src="./test/render-for-miller.png" alt="vifm" height="220px">
 </div>
 
 
