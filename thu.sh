@@ -374,7 +374,7 @@ wh_start_get () {
     cells=$3
     whcell=$4
     # term_resolution is from esc query, do not query unless needed
-    wharea_pixels=$([ -z "$3" ] && echo "$(wh_term_resolution_get)")
+    wharea_pixels=$([ -z "$3" ] && wh_term_resolution_get)
     wharea_cells=$(wh_term_columnsrows_get)
     wharea_def=$([ -n "$3" ] && echo "$wharea_cells" || echo "$wharea_pixels")
     w=$([ -n "$1" ] && echo "$1" || echo "$((${wharea_def%%x*} * 80 / 100))")
