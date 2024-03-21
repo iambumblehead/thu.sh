@@ -1,13 +1,12 @@
-<h3 align="center"><img src="./test/render-for.demo.gif" alt="demo" height="400px"></h3>
-<p align="center"><code>thu.sh</code> renders preview images to the terminal; ~1000 LOC bash</p>
-<span align="center">
-  [![test][1]][0] [![license][3]][2] [![release][5]][4] [![][7]][6]
-</span>
+# thu.sh! 🚀
 
-> [!WARNING]
-> This project has no major releases and sources will change suddenly any time.
+<img align="right" src="./test/render-for.demo.gif" alt="demo" height="280">
 
-**thu.sh renders images for various file types to the terminal.** It renders images from audio, font, video, pdf, epub, svg and other files --supporting both kitty and sixel formats. It detects available commands from the system for a small dependency tree,
+`thu.sh` renders preview images to the terminal; ~1000 LOC bash
+
+[![test][1]][0] [![license][3]][2] [![release][5]][4] [![][7]][6]
+
+**thu.sh renders images from audio, font, video, pdf, epub, svg** and other files --supporting both kitty and sixel formats. It detects available commands from the system for a small dependency tree,
  * `magick` sixel or `kitten icat` display,
  * `mutool`, `pdftoppm` or `magick` pdf,
  * `ffmpeg` video audio,
