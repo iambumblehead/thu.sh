@@ -9,6 +9,7 @@
    * rename [render-thumb-for.sh to thu.sh](https://github.com/iambumblehead/thu.sh/pull/41)
    * separate [image-generation from image-display.](https://github.com/iambumblehead/thu.sh/pull/42) Will allow more control with caching and session state, testing etc.
    * detect foot version lte 1.16.2 and [show warning message.](https://github.com/iambumblehead/thu.sh/pull/43)
+   * improve stored [state usage (so that it works with vifm)](https://github.com/iambumblehead/thu.sh/pull/44)
  * 0.0.7 _Mar.14.2024_
    * improve [support for xterm](https://github.com/iambumblehead/thu.sh/pull/25)
    * added [support for cell units](https://github.com/iambumblehead/thu.sh/pull/26)
