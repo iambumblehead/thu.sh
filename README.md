@@ -1,7 +1,7 @@
 <h3 align="center"><img src="./test/render-for.demo.gif" alt="demo" height="400px"></h3>
 <p align="center"><code>thu.sh</code> renders preview images to the terminal; ~1000 LOC bash</p>
 <p align="center">
-  [![test][1]][0][![license][3]][2][![release][5]][4][![][7]][6]
+  [![test][1]][0] [![license][3]][2] [![release][5]][4] [![][7]][6]
 </p>
 
 > [!WARNING]
