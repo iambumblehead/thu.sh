@@ -83,14 +83,14 @@ cachedir="$HOME/.config/thu"
     cachedir="$XDG_CONFIG_HOME/thu"
 
 join () {
-    local a=("${@:3}"); printf "%s" "$2${a[@]/#/$1}";
+    local a=("${@:3}"); printf "%s" "$2" "${a[@]/#/$1}"
 }
 
 regex () { # Usage: regex "string" "regex"
     [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
 }
 
-fail () { ## Send message to stderr, return code specified by $2, or 1 (default)
+fail () { # Send message to stderr, return code specified by $2, or 1 (default)
     printf '%s\n' "$1" >&2; exit "${2-1}"
 }
 

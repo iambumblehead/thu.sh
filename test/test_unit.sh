@@ -39,7 +39,7 @@ test_zip_read_file () {
     filepath_not_exist="./path/not/exist.xml"
     zippath_not_exist="./path/not/exist.zip"
 
-    assert_fail $(zip_read_file "$filepath_not_exist" "$zippath_not_exist") \
+    assert_fail "$(zip_read_file "$filepath_not_exist" "$zippath_not_exist")" \
                 "should fail if zippath does not exist"
 }
 
