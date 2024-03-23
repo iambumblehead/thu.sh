@@ -86,9 +86,12 @@ join () {
     local a=("${@:3}"); printf "%s" "$2${a[@]/#/$1}";
 }
 
-fail () {
-    printf '%s\n' "$1" >&2 ## Send message to stderr.
-    exit "${2-1}" ## Return a code specified by $2, or 1 by default.
+regex () { # Usage: regex "string" "regex"
+    [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
+}
+
+fail () { ## Send message to stderr, return code specified by $2, or 1 (default)
+    printf '%s\n' "$1" >&2; exit "${2-1}"
 }
 
 print_help () {
@@ -254,16 +257,13 @@ image_display_format_get () {
     fi
 }
 
-regex() {
-    # Usage: regex "string" "regex"
-    [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
-}
-
 zip_read_file () {
     if [[ -z "$is_cmd_unzip" ]]; then
         fail "$msg_cmd_not_found_unzip";
     fi
 
+    # extract files to pipe (stdout). Nothing but the file data sent to stdout,
+    # and files always extracted in binary, just as stored (no conversions).
     unzip -p "$1" "$2"
 }
 
