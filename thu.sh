@@ -49,18 +49,12 @@ escXTERMtermsize=$(printf '%b' "\e[14t")
 escXTERMcellsize=$(printf '%b' "\e[16t")
 escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
 
-msg_cmds_not_found () {
-    if [[ "$#" -gt 1 ]]; then
-        printf "Error: %s\n" "commands not found: $*"
-    else
-        printf "Error: %s\n" "command not found: $*"
-    fi
-}
-msg_cmd_not_found_pdfany=$(msg_cmds_not_found "mutool" "pdftoppm" "magick")
-msg_cmd_not_found_ffmpeg=$(msg_cmds_not_found "ffmpeg")
-msg_cmd_not_found_unzip=$(msg_cmds_not_found "unzip")
-msg_cmd_not_found_magickany=$(msg_cmds_not_found "magick" "convert")
-msg_cmd_not_found_identifyany=$(msg_cmds_not_found "exiftool" "identify")
+msg_cmd_not_found="commands not found:"
+msg_cmd_not_found_pdfany="$msg_cmd_not_found 'mutool' 'pdftoppm' 'magick'"
+msg_cmd_not_found_ffmpeg="$msg_cmd_not_found 'ffmpeg'"
+msg_cmd_not_found_unzip="$msg_cmd_not_found 'unzip'"
+msg_cmd_not_found_magickany="$msg_cmd_not_found 'magick' 'convert'"
+msg_cmd_not_found_identifyany="$msg_cmd_not_found 'exiftool' 'identify'"
 msg_unsupported_width="unsupported width, :width"
 msg_unsupported_height="unsupported height, :height"
 msg_undetectable_cell_size="cell size undetectable, try -r option"
@@ -87,6 +81,18 @@ sessdisplayformat_re="displayformat=(SIXEL|KITTY|NONE)"
 cachedir="$HOME/.config/thu"
 [ -n "${XDG_CONFIG_HOME}" ] &&
     cachedir="$XDG_CONFIG_HOME/thu"
+
+join () {
+    local a=("${@:3}"); printf "%s" "$2" "${a[@]/#/$1}"
+}
+
+regex () { # Usage: regex "string" "regex"
+    [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
+}
+
+fail () { # Send message to stderr, return code specified by $2, or 1 (default)
+    printf '%s\n' "$1" >&2; exit "${2-1}"
+}
 
 print_help () {
     echo "-c cell, proces width and height as cell columns and lines"
@@ -172,24 +178,15 @@ is_foot_lte_1_16_2_get () {
     fi
 }
 
-# shellcheck disable=SC2116
 is_foot_lte_1_16_2_message_get () {
-    footmsg=$(
-        echo "WARNING: When window resolution is scaled, this version of foot" \
-             "returns incorrect dimensions:" \
-             "https://codeberg.org/dnkl/foot/issues/1643," \
-             "" \
-             "To supress this message, define zoom scale using \"-z \$SCALE\"." \
-             "The value of \$SCALE will correspond to the window scale used." \
-             "If no window scaling, use \"-z 1\"." \
-             "If a 3x window scaling is used, use \"-z 3\".")
-
-    printf '%s\n' "${footmsg}"
-}
-
-fail () {
-    printf '%s\n' "$1" >&2 ## Send message to stderr.
-    exit "${2-1}" ## Return a code specified by $2, or 1 by default.
+    join $'\n' \
+         "WARNING: foot <= v1.16.2 returns incorrect scaled-window values:" \
+         "https://codeberg.org/dnkl/foot/issues/1643" \
+         "" \
+         "To supress this message, define zoom scale using \"-z \$SCALE\"." \
+         "The value of \$SCALE will correspond to the window scale used." \
+         "  If no window scaling, use \"-z 1\"." \
+         "  If a 3x window scaling is used, use \"-z 3\"."
 }
 
 # thank you @topcat001
@@ -260,16 +257,13 @@ image_display_format_get () {
     fi
 }
 
-regex() {
-    # Usage: regex "string" "regex"
-    [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
-}
-
 zip_read_file () {
     if [[ -z "$is_cmd_unzip" ]]; then
         fail "$msg_cmd_not_found_unzip";
     fi
 
+    # extract files to pipe (stdout). Nothing but the file data sent to stdout,
+    # and files always extracted in binary, just as stored (no conversions).
     unzip -p "$1" "$2"
 }
 
@@ -778,7 +772,6 @@ thumb_create_from_pdf_pdftoppm () {
     echo "$pdf_thumb_path"
 }
 
-# shellcheck disable=SC2116
 thumb_create_from_font () {
     font_path=$1
     font_wh_max=$2
@@ -786,13 +779,13 @@ thumb_create_from_font () {
     font_bg_color="rgba(0,0,0,1)"
     font_fg_color="rgba(240,240,240,1)"
     font_preview_text=$(
-        echo "ABCDEFGHIJKLM" \
+        join $'\n' \
+             "ABCDEFGHIJKLM" \
              "NOPQRSTUVWXYZ" \
              "abcdefghijklm" \
              "nopqrstuvwxyz" \
              "1234567890" \
              "!@$\%(){}[]")
-    font_preview_multiline=${font_preview_text// /\\n}
     font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
 
     if [[ -n "$is_cmd_magick" ]]; then
@@ -803,7 +796,7 @@ thumb_create_from_font () {
             -font "$font_path" \
             -pointsize "$font_pointsize" \
             -gravity Center \
-            "label:${font_preview_multiline}" \
+            "label:${font_preview_text}" \
             "$font_thumb_path"
 
         echo "$font_thumb_path"
@@ -818,7 +811,7 @@ thumb_create_from_font () {
             -font "$font_path" \
             -pointsize "$font_pointsize" \
             -gravity Center \
-            "label:${font_preview_multiline}" \
+            "label:${font_preview_text}" \
             "$font_thumb_path"
 
         echo "$font_thumb_path"
@@ -913,15 +906,14 @@ thumb_create_from () {
     esac
 }
 
-# shellcheck disable=SC2116
 sessbuild_get () {
     sess=$(
-        echo "thu.sh=v$version" \
+        join ',' \
+             "thu.sh=v$version" \
              "sess=$sessid" \
              "displayformat=$(image_display_format_get)" \
              "sixelmaxwh=$(wh_sixelmax_get)" \
              "cellwh=$(wh_cell_get)")
-    sess="${sess// /,}"
 
     cachedir_calibrate "$cachedir" "$cache"
 

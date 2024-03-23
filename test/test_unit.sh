@@ -22,6 +22,27 @@ test_wh_get_returns_WxH () {
                   "should return \"WxH\" dimensions"
 }
 
+test_image_display_format_get () {
+    sessstr_KITTY="displayformat=KITTY"
+    sessstr_SIXEL="displayformat=SIXEL"
+    sessstr_NONE="displayformat=NONE"
+
+    assert_equals "KITTY" "$(image_display_format_get $sessstr_KITTY)" \
+                  "should return displayformat from sess string, KITTY"
+    assert_equals "SIXEL" "$(image_display_format_get $sessstr_SIXEL)" \
+                  "should return displayformat from sess string, SIXEL"
+    assert_equals "NONE" "$(image_display_format_get $sessstr_NONE)" \
+                  "should return displayformat from sess string, NONE"
+}
+
+test_zip_read_file () {
+    filepath_not_exist="./path/not/exist.xml"
+    zippath_not_exist="./path/not/exist.zip"
+
+    assert_fail "$(zip_read_file "$filepath_not_exist" "$zippath_not_exist")" \
+                "should fail if zippath does not exist"
+}
+
 setup_suite() {
     source ../thu.sh
 }
