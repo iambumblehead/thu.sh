@@ -1,6 +1,6 @@
 # changelog
 
- * 0.0.8 _Mar.16.2024_
+ * 0.0.9 _Mar.16.2024_
    * simplify [multiline string definition](https://github.com/iambumblehead/thu.sh/pull/48)
  * 0.0.8 _Mar.22.2024_
    * added [less trivial tests](https://github.com/iambumblehead/thu.sh/pull/33)
