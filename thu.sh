@@ -127,7 +127,7 @@ cache="true" # getopts hcm: would force 'm' to have params
 timeoutss=1.2
 sessbuild=""
 defaultw=1000
-version=0.0.8
+version=0.0.9
 while getopts "cr:bkl:jstivz:h" opt; do
     case "${opt}" in
         c) cells="true";;
