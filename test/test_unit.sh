@@ -78,12 +78,15 @@ test_zip_move_file_out () {
     #       media-type="application/oebps-package+xml" />
     #   </rootfiles>
     # </container>
-    $(zip_move_file_out \
-          "$zippath_testepub" \
-          "$filepath_container" \
-          "$filepath_containeroutdir")
+    zip_move_file_out \
+        "$zippath_testepub" \
+        "$filepath_container" \
+        "$filepath_containeroutdir"
 
-    assert_matches "$containerurl" $(cat "$filepath_containerout")
+    container=$(cat "$filepath_containerout")
+    containerurn="urn:oasis:names:tc:opendocument:xmlns:container"
+
+    assert_matches "$containerurn" "$container"
 }
 
 setup_suite() {
