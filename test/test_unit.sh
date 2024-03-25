@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=2317
 #
 # bash_unit test/test_core.sh
 
@@ -59,7 +60,7 @@ test_zip_read_file () {
     container=$(zip_read_file "$zippath_testepub" "$filepath_container")
     containerurn="urn:oasis:names:tc:opendocument:xmlns:container"
 
-    assert_matches "$containerurl" "$container"
+    assert_matches "$containerurn" "$container"
 }
 
 test_zip_move_file_out () {
