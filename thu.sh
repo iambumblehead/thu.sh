@@ -134,7 +134,7 @@ cache="true"
 timeoutss=1.2
 sessbuild=""
 defaultw=1000
-version=0.0.9
+version=0.1.0
 while getopts "cer:bkl:jstivz:h" opt; do
     case "${opt}" in
         c) cells="true";;
