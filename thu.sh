@@ -64,6 +64,7 @@ msg_unknown_win_size="window size is unknown and could not be detected"
 msg_invalid_resolution="resolution invalid: :resolution"
 msg_invalid_zoom="resolution invalid: :zoom"
 msg_epub_cover_not_found="epub cover image could not be located"
+msg_could_not_generate_image="could not generate image"
 
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
 resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
@@ -712,7 +713,7 @@ thumb_create_from_audio () {
         -loglevel error \
         -hide_banner \
         -y "$aud_thumb_path"
-
+    
     echo "$aud_thumb_path"
 }
 
@@ -939,8 +940,11 @@ start () {
     cachedir_calibrate "$cachedir" "$cache"
 
     thumb_path=$(thumb_create_from "$path" "$target_wh_goal")
-    if [[ -n "$thumb_path" ]]; then
+
+    if [[ -n "$thumb_path" && -f "$thumb_path" ]]; then
         paint "$thumb_path" "$target_wh_goal" "$target_format"
+    else 
+        fail "${msg_could_not_generate_image}"
     fi
 }
 
