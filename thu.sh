@@ -64,6 +64,7 @@ msg_unknown_win_size="window size is unknown and could not be detected"
 msg_invalid_resolution="resolution invalid: :resolution"
 msg_invalid_zoom="resolution invalid: :zoom"
 msg_epub_cover_not_found="epub cover image could not be located"
+msg_could_not_generate_image="could not generate image"
 
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
 resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
@@ -94,8 +95,13 @@ fail () { # Send message to stderr, return code specified by $2, or 1 (default)
     printf '%s\n' "$1" >&2; exit "${2-1}"
 }
 
+error () { # Send message to stderr, no exit code
+    printf '%s\n' "$1" >&2;
+}
+
 print_help () {
     echo "-c cell, proces width and height as cell columns and lines"
+    echo "-e error, show errors normally hidden during image-generation flow"
     echo "-r resolution, cell pixel resolution mostly for foot@1.16.2 ex, 10x21"
     echo "-i id, define sesson 'id'"
     echo "-b blocked, define stdout blocked (ncurses), send esc queries to tty"
@@ -123,14 +129,16 @@ sessid="sessdefault"
 zoom=
 cells=
 sess=""
+show_error=
 cache="true"
 timeoutss=1.2
 sessbuild=""
 defaultw=1000
 version=0.0.9
-while getopts "cr:bkl:jstivz:h" opt; do
+while getopts "cer:bkl:jstivz:h" opt; do
     case "${opt}" in
         c) cells="true";;
+        e) show_error="true";;
         r) resolution="${OPTARG}"
            if [[ ! "$resolution" =~ $wxhstr_re ]]; then
                fail "${msg_invalid_resolution/:resolution/${OPTARG}}"
@@ -348,7 +356,7 @@ paint () {
 
     case "$3" in
         "$format_type_SIXEL")
-            image_to_sixel_magick "$img_path" "$img_wh";;            
+            image_to_sixel_magick "$img_path" "$img_wh";;
         "$format_type_KITTY")
             # kitten does not provide a 'geometry' option
             # so image must have been preprocessed to fit desired geometry
@@ -362,7 +370,7 @@ paint () {
 #
 # starting width and height integers are optional
 # default uses %80 width of given view or terminal
-#  
+#
 # (w, h, cells, wh_cell)
 wh_start_get () {
     cells=$3
@@ -724,19 +732,23 @@ thumb_create_from_pdf_magick () {
     pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "$2" ".jpg")
 
     if [[ -n "$is_cmd_magick" ]]; then
-        magick \
+        pdfimg_error=$(magick \
             "${pdf_path}[0]" \
             -define pdf:thumbnail=true \
             -resize "$pdf_target_wh" \
-            "$pdf_thumb_path"
+            "$pdf_thumb_path" 2>&1)
     elif [[ -n "$is_cmd_convert" ]]; then
-        convert \
-            "$pdf_path" \
+        pdfimg_error=$(convert \
+            "${pdf_path}[0]" \
             -define pdf:thumbnail=true \
             -resize "$pdf_target_wh" \
-            "$pdf_thumb_path"
+            "$pdf_thumb_path" 2>&1)
     else
         fail "$msg_cmd_not_found_magickany"
+    fi
+
+    if [[ -n "$pdfimg_error" && -n "$show_error" ]]; then
+        error "pdfimg $pdfimg_error"
     fi
 
     echo "$pdf_thumb_path"
@@ -789,7 +801,7 @@ thumb_create_from_font () {
     font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
 
     if [[ -n "$is_cmd_magick" ]]; then
-        magick \
+        fontimg_error=$(magick \
             -size "$font_wh_max" \
             -background "$font_bg_color" \
             -fill "$font_fg_color" \
@@ -797,14 +809,9 @@ thumb_create_from_font () {
             -pointsize "$font_pointsize" \
             -gravity Center \
             "label:${font_preview_text}" \
-            "$font_thumb_path"
-
-        echo "$font_thumb_path"
-        exit 0
-    fi
-
-    if [[ -n "$is_cmd_convert" ]]; then
-        convert \
+            "$font_thumb_path" 2>&1)
+    elif [[ -n "$is_cmd_convert" ]]; then
+        fontimg_error=$(convert \
             -size "$font_wh_max" \
             -background "$font_bg_color" \
             -fill "$font_fg_color" \
@@ -812,13 +819,16 @@ thumb_create_from_font () {
             -pointsize "$font_pointsize" \
             -gravity Center \
             "label:${font_preview_text}" \
-            "$font_thumb_path"
-
-        echo "$font_thumb_path"
-        exit 0
+            "$font_thumb_path" 2>&1)
+    else
+        fail "$msg_cmd_not_found_magickany"
     fi
 
-    fail "$msg_cmd_not_found_magickany"
+    if [[ -n "$fontimg_error" && -n "$show_error" ]]; then
+        error "fontimg $fontimg_error"
+    fi
+
+    echo "$font_thumb_path"
 }
 
 # thumb_create_from_pdf $path $wh
@@ -842,17 +852,21 @@ thumb_create_from_image () {
     oimg_thumb_path=$(cachedir_path_get "$cachedir" "img" "$2" ".png")
 
     if [[ -n "$is_cmd_magick" ]]; then
-        magick \
+        imgimg_error=$(magick \
             "$oimg_path" \
             -resize "$oimg_wh_scaled" \
-            "$oimg_thumb_path"
+            "$oimg_thumb_path" 2>&1)
     elif [[ -n "$is_cmd_convert" ]]; then
-        convert \
+        imgimg_error=$(convert \
             "$oimg_path" \
             -resize "$oimg_wh_scaled" \
-            "$oimg_thumb_path"
+            "$oimg_thumb_path" 2>&1)
     else
         fail "$msg_cmd_not_found_magickany"
+    fi
+
+    if [[ -n "$imgimg_error" && -n "$show_error" ]]; then
+        error "imgimg $imgimg_error"
     fi
 
     echo "$oimg_thumb_path"
@@ -864,20 +878,25 @@ thumb_create_from_svg () {
     svgimg_thumb_path=$(cachedir_path_get "$cachedir" "svg" "$2" ".png")
 
     if [[ -n "$is_cmd_magick" ]]; then
-        magick \
+        svgimg_error=$(magick \
             -background "rgba(0,0,0,0)" \
             "$svgimg_path" \
             -geometry "$svgimg_target_wh" \
-            "$svgimg_thumb_path"
+            "$svgimg_thumb_path" 2>&1)
     elif [[ -n "$is_cmd_convert" ]]; then
-        convert \
+        svgimg_error=$(convert \
+            -quiet \
             -channel rgba \
             -background "rgba(0,0,0,0)" \
             -geometry "$svgimg_target_wh" \
             "$svgimg_path" \
-            "$svgimg_thumb_path"
+            "$svgimg_thumb_path" 2>&1)
     else
         fail "$msg_cmd_not_found_magickany"
+    fi
+
+    if [[ -n "$svgimg_error" && -n "$show_error" ]]; then
+        error "svgimg $svgimg_error"
     fi
 
     echo "$svgimg_thumb_path"
@@ -939,8 +958,10 @@ start () {
     cachedir_calibrate "$cachedir" "$cache"
 
     thumb_path=$(thumb_create_from "$path" "$target_wh_goal")
-    if [[ -n "$thumb_path" ]]; then
+    if [[ -n "$thumb_path" && -f "$thumb_path" ]]; then
         paint "$thumb_path" "$target_wh_goal" "$target_format"
+    else 
+        fail "${msg_could_not_generate_image}"
     fi
 }
 
