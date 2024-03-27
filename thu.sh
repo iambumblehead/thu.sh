@@ -739,7 +739,7 @@ thumb_create_from_pdf_magick () {
             "$pdf_thumb_path" 2>&1)
     elif [[ -n "$is_cmd_convert" ]]; then
         pdgimg_error=$(convert \
-            "$pdf_path" \
+            "${pdf_path}[0]" \
             -define pdf:thumbnail=true \
             -resize "$pdf_target_wh" \
             "$pdf_thumb_path" 2>&1)
@@ -958,7 +958,6 @@ start () {
     cachedir_calibrate "$cachedir" "$cache"
 
     thumb_path=$(thumb_create_from "$path" "$target_wh_goal")
-
     if [[ -n "$thumb_path" && -f "$thumb_path" ]]; then
         paint "$thumb_path" "$target_wh_goal" "$target_format"
     else 
