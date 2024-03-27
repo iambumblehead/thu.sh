@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=2317
 #
 # bash_unit test/test_core.sh
 
@@ -41,6 +42,51 @@ test_zip_read_file () {
 
     assert_fail "$(zip_read_file "$filepath_not_exist" "$zippath_not_exist")" \
                 "should fail if zippath does not exist"
+}
+
+test_zip_read_file () {
+    filepath_container="META-INF/container.xml"
+    zippath_testepub="./asset/test.epub"
+
+    # <container
+    #   version="1.0"
+    #   xmlns="urn:oasis:names:tc:opendocument:xmlns:container" >
+    #   <rootfiles>
+    #     <rootfile
+    #       full-path="OEBPS/content.opf"
+    #       media-type="application/oebps-package+xml" />
+    #   </rootfiles>
+    # </container>
+    container=$(zip_read_file "$zippath_testepub" "$filepath_container")
+    containerurn="urn:oasis:names:tc:opendocument:xmlns:container"
+
+    assert_matches "$containerurn" "$container"
+}
+
+test_zip_move_file_out () {
+    filepath_container="META-INF/container.xml"
+    zippath_testepub="./asset/test.epub"
+    filepath_containeroutdir="./asset-out/"
+    filepath_containerout="${filepath_containeroutdir}container.xml"
+
+    # <container
+    #   version="1.0"
+    #   xmlns="urn:oasis:names:tc:opendocument:xmlns:container" >
+    #   <rootfiles>
+    #     <rootfile
+    #       full-path="OEBPS/content.opf"
+    #       media-type="application/oebps-package+xml" />
+    #   </rootfiles>
+    # </container>
+    zip_move_file_out \
+        "$zippath_testepub" \
+        "$filepath_container" \
+        "$filepath_containeroutdir"
+
+    container=$(cat "$filepath_containerout")
+    containerurn="urn:oasis:names:tc:opendocument:xmlns:container"
+
+    assert_matches "$containerurn" "$container"
 }
 
 setup_suite() {
