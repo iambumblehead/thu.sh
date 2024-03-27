@@ -732,13 +732,13 @@ thumb_create_from_pdf_magick () {
     pdf_thumb_path=$(cachedir_path_get "$cachedir" "pdf" "$2" ".jpg")
 
     if [[ -n "$is_cmd_magick" ]]; then
-        pdgimg_error=$(magick \
+        pdfimg_error=$(magick \
             "${pdf_path}[0]" \
             -define pdf:thumbnail=true \
             -resize "$pdf_target_wh" \
             "$pdf_thumb_path" 2>&1)
     elif [[ -n "$is_cmd_convert" ]]; then
-        pdgimg_error=$(convert \
+        pdfimg_error=$(convert \
             "${pdf_path}[0]" \
             -define pdf:thumbnail=true \
             -resize "$pdf_target_wh" \
@@ -852,12 +852,12 @@ thumb_create_from_image () {
     oimg_thumb_path=$(cachedir_path_get "$cachedir" "img" "$2" ".png")
 
     if [[ -n "$is_cmd_magick" ]]; then
-        imgtimg_error=$(magick \
+        imgimg_error=$(magick \
             "$oimg_path" \
             -resize "$oimg_wh_scaled" \
             "$oimg_thumb_path" 2>&1)
     elif [[ -n "$is_cmd_convert" ]]; then
-        imgtimg_error=$(convert \
+        imgimg_error=$(convert \
             "$oimg_path" \
             -resize "$oimg_wh_scaled" \
             "$oimg_thumb_path" 2>&1)
