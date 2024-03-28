@@ -1,7 +1,6 @@
 <h3 align="center"><img src="./test/thu.sh.demo.gif" alt="demo" height="400px"></h3>
 <p align="center"><code>thu.sh</code> renders preview images to the terminal; ~1000 LOC bash</p>
 <p align="center">
-<a href="./thu.sh"><img src="https://img.badgesize.io/iambumblehead/thu.sh/main/thu.sh.svg?compression=gzip"></a>
 <a href="https://github.com/iambumblehead/thu.sh/workflows"><img src="https://img.shields.io/badge/tests-passing-brightgreen.svg"></a>
 <a href="./LICENSE.md"><img src="https://img.shields.io/badge/license-GPLv3-blue.svg"></a>
 <a href="https://github.com/iambumblehead/thu.sh/releases"><img src="https://img.shields.io/github/release/iambumblehead/thu.sh.svg"></a>
