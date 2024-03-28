@@ -38,6 +38,10 @@ format_type_SIXEL="SIXEL"
 format_type_KITTY="KITTY"
 format_type_NONE="NONE"
 
+color_RGBA_transp="rgba(0,0,0,0)"
+color_RGBA_black="rgba(0,0,0,1)"
+color_RGBA_cream="rgba(240,240,240,1)"
+
 # escape sequences used to query the terminal for details,
 #   https://www.mankier.com/7/foot-ctlseqs
 #   https://iterm2.com/documentation-escape-codes.html
@@ -369,7 +373,7 @@ image_to_sixel_magick () {
     export MAGICK_OCL_DEVICE=true
     if [[ -n "$is_cmd_magick" ]]; then
         magick \
-            -background "rgba(0,0,0,0)" \
+            -background "$color_RGBA_transp" \
             "$img_path" \
             -geometry "$img_wh" \
             sixel:-
@@ -377,7 +381,7 @@ image_to_sixel_magick () {
     elif [[ -n "$is_cmd_convert" ]]; then
         convert \
             -channel rgba \
-            -background "rgba(0,0,0,0)" \
+            -background "$color_RGBA_transp" \
             -geometry "$img_wh" \
             "$img_path" \
             sixel:-
@@ -862,8 +866,8 @@ thumb_create_from_font () {
     font_path=$1
     font_wh_max=$2
     font_pointsize="$(wh_pointsize_get "$2")"
-    font_bg_color="rgba(0,0,0,1)"
-    font_fg_color="rgba(240,240,240,1)"
+    font_bg_color="$color_RGBA_black"
+    font_fg_color="$color_RGBA_cream"
     font_preview_text=$(
         join $'\n' \
              "ABCDEFGHIJKLM" \
@@ -953,7 +957,7 @@ thumb_create_from_svg () {
 
     if [[ -n "$is_cmd_magick" ]]; then
         svgimg_error=$(magick \
-            -background "rgba(0,0,0,0)" \
+            -background "$color_RGBA_transp" \
             "$svgimg_path" \
             -geometry "$svgimg_target_wh" \
             "$svgimg_thumb_path" 2>&1)
@@ -961,7 +965,7 @@ thumb_create_from_svg () {
         svgimg_error=$(convert \
             -quiet \
             -channel rgba \
-            -background "rgba(0,0,0,0)" \
+            -background "$color_RGBA_transp" \
             -geometry "$svgimg_target_wh" \
             "$svgimg_path" \
             "$svgimg_thumb_path" 2>&1)
