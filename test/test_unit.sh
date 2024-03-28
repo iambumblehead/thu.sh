@@ -90,7 +90,7 @@ test_zip_move_file_out () {
 }
 
 test_thumb_create_from_pdf_magcick () {
-    pdfpath_inpdf="./asset/test.pdf"
+    pdfpath_inpdf="./asset/test.640x480.pdf"
     pdfpath_outimg=$(thumb_create_from_pdf_magick "$pdfpath_inpdf" "400x400")
 
     assert_matches "pdf.400x400.jpg$" "$pdfpath_outimg" \
