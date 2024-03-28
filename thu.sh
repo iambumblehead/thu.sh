@@ -361,7 +361,7 @@ file_type_get () {
 
 image_to_sixel_magick () {
     img_path=$1
-    img_wh=$2
+    img_wh=$3
 
     export MAGICK_OCL_DEVICE=true
     if [[ -n "$is_cmd_magick" ]]; then
@@ -386,26 +386,30 @@ image_to_sixel_magick () {
 
 image_to_kittenicat () {
     img_path=$1
-    img_wh=$2
+    img_tl=$2
+    img_wh=$3
 
     # kitten does not provide a 'geometry' option
     # so image must have been preprocessed to fit desired geometry
+    # or must be exactly placed AND sized
+    # --place `<width>x<height>@<left>x<top>`
     if [[ -n "$is_stdout_blocked" ]]; then
-        kitten icat --align left --transfer-mode=stream "$img_path" >/dev/tty </dev/tty
+        kitten icat \
+               --place "${img_wh}@${img_tl}" \
+               --align left \
+               --transfer-mode=stream "$img_path" >/dev/tty </dev/tty
     else
         kitten icat --align left "$img_path"
     fi
 }
 
+# paint $PATH $TL $WH $FORMAT
 paint () {
-    img_path=$1
-    img_wh=$2
-
-    case "$3" in
+    case "$4" in
         "$format_type_SIXEL")
-            image_to_sixel_magick "$img_path" "$img_wh";;
+            image_to_sixel_magick "$@";;
         "$format_type_KITTY")
-            image_to_kittenicat "$img_path" "$img_wh";;
+            image_to_kittenicat "$@";;
         *)
             fail "$msg_unsupported_display, format_type: \"$3\""
     esac
@@ -441,6 +445,13 @@ wh_start_get () {
     fi
 
     echo "$wh"
+}
+
+tl_start_get () {
+    t=$([ -n "$1" ] && echo "$1" || echo "0")
+    l=$([ -n "$2" ] && echo "$2" || echo "0")
+
+    printf '%s\n' "${t}x${l}"
 }
 
 # wh_apply_zoom $WxH $zoom
@@ -1002,7 +1013,8 @@ start () {
     wh_cell=$(wh_cell_get "$sess")
     target_format=$(image_display_format_get "$sess")
     target_wh_max=$(wh_imagemax_get "$sess")
-    target_wh_goal=$(wh_start_get "$2" "$3" "$cells" "$wh_cell")
+    target_wh_goal=$(wh_start_get "$4" "$5" "$cells" "$wh_cell")
+    target_tl_goal=$(tl_start_get "$2" "$3")
 
     [[ $target_wh_max =~ $wxhstr_re ]] &&
         target_wh_goal=$(wh_scaled_get "$target_wh_goal" "$target_wh_max")
@@ -1015,7 +1027,7 @@ start () {
 
     thumb_path=$(thumb_create_from "$path" "$target_wh_goal")
     if [[ -n "$thumb_path" && -f "$thumb_path" ]]; then
-        paint "$thumb_path" "$target_wh_goal" "$target_format"
+        paint "$thumb_path" "$target_tl_goal" "$target_wh_goal" "$target_format"
     else 
         fail "${msg_could_not_generate_image}"
     fi
