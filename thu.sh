@@ -22,6 +22,7 @@ is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
 is_cmd_unzip=$(command -v unzip)
+is_iterm2=$([ "$LC_TERMINAL" == "iTerm2" ] && echo "true")
 is_stdout_blocked=""
 [ ! -t 1 ] &&
     is_stdout_blocked="true"
@@ -262,9 +263,10 @@ escquery_cellwh_get_xterm () {
 }
 
 escquery_cellwh_get () {
-    wh=$(escquery_cellwh_get_xterm)
-    if [[ -z "$wh" ]]; then
+    if [[ -n "$is_iterm2" ]]; then
         wh=$(escquery_cellwh_get_iterm2)
+    else
+        wh=$(escquery_cellwh_get_xterm)
     fi
 
     if [[ -n "$wh" ]]; then
@@ -501,7 +503,7 @@ wh_imagemax_get () {
     sesssixelmaxwh=$(regex "$1" "$sesssixelmaxwh_re")
     if [[ -n "$sesssixelmaxwh" ]]; then
         echo "$sesssixelmaxwh"
-    elif [[ -n "$is_cmd_kitten" ]]; then
+    elif [[ -n "$is_cmd_kitten" || -n "$is_iterm2" ]]; then
         echo ""
     else
         wh_sixelmax_get
