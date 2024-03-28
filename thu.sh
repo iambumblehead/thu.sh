@@ -138,7 +138,7 @@ show_error=
 cache="true"
 timeoutssint=2 # must be integer for darwin/mac variant of 'read'
 sessbuild=""
-defaultw=1000
+defaultw=10000
 version=0.1.0
 while getopts "cer:bkl:jstivz:h" opt; do
     case "${opt}" in
@@ -524,7 +524,7 @@ wh_term_columnsrows_get () {
     printf '%s\n' "$(tput cols)x$(tput lines)"
 }
 
-wh_term_resolution_get () {
+wh_term_resolution_get_xterm () {
     esc="$escXTERMtermsize"
     if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
@@ -535,9 +535,10 @@ wh_term_resolution_get () {
 
     if [[ "${REPLY[1]}" =~ $numint_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
-        exit 0
     fi
+}
 
+wh_term_resolution_get_tmux () {
     esc="$escXTERMtermsizeTMUX"
     if [[ -n "$is_stdout_blocked" ]]; then
         echo -e '\e[14t' > /dev/tty
@@ -548,10 +549,20 @@ wh_term_resolution_get () {
 
     if [[ "${REPLY[1]}" =~ $numint_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
-        exit 0
+    fi
+}
+
+wh_term_resolution_get () {
+    wh=$(wh_term_resolution_get_xterm)
+    if [[ -z "$wh" ]]; then
+        wh=$(wh_term_resolution_get_tmux)
     fi
 
-    fail "$msg_unknown_win_size"
+    if [[ -n "$wh" ]]; then
+        printf '%s\n' "$wh"
+    else
+        fail "$msg_unknown_win_size"
+    fi
 }
 
 # get the width and height in pixels from columns and rows
