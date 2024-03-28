@@ -398,12 +398,9 @@ image_to_kittenicat () {
     # or must be exactly placed AND sized
     # --place `<width>x<height>@<left>x<top>`
     # --use-window-size `cells_width,cells_height,pixels_width,pixels_height`
+    # https://github.com/kovidgoyal/kitty/discussions/7275
     if [[ -n "$is_stdout_blocked" ]]; then
-        kicat_wh_cells=$(wh_term_columnsrows_get)
-        kicat_wh_pixels=$(wh_pixels_from_cells_get "$kicat_wh_cells" "$wh_cell")
-
         kitten icat \
-               --use-window-size "${kicat_wh_cells/x/,},${kicat_wh_pixels/x/,}" \
                --place "${img_wh}@${img_tl}" \
                --align left \
                --stdin=no \
