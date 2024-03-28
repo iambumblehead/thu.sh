@@ -48,6 +48,7 @@ escXTERMsixelmaxwh=$(printf '%b' "\e[?2;4;0S")
 escXTERMtermsize=$(printf '%b' "\e[14t")
 escXTERMcellsize=$(printf '%b' "\e[16t")
 escXTERMtermsizeTMUX=$(printf '%b' "${TMUX:+\\ePtmux;\\e}\\e[14t${TMUX:+\\e\\\\}")
+escITERM2cellsize=$(printf '%b' "\e]1337;ReportCellSize\a")
 
 msg_cmd_not_found="commands not found:"
 msg_cmd_not_found_pdfany="$msg_cmd_not_found 'mutool' 'pdftoppm' 'magick'"
@@ -89,6 +90,10 @@ join () {
 
 regex () { # Usage: regex "string" "regex"
     [[ $1 =~ $2 ]] && printf '%s\n' "${BASH_REMATCH[1]}"
+}
+
+parse_int () { # remove after decimal for now; `printf -v int` empty iterm2
+    printf '%d\n' "${1%.*}"
 }
 
 fail () { # Send message to stderr, return code specified by $2, or 1 (default)
@@ -150,7 +155,7 @@ while getopts "cer:bkl:jstivz:h" opt; do
         l) sess="${OPTARG}";;
         s) cache="true";;
         t) timeoutssint="${OPTARG}";;
-        z) zoom="${OPTARG%.*}" # remove after decimal for now
+        z) zoom=$(parse_int "$OPTARG") # remove after decimal for now
            if [[ ! "$zoom" =~ $numfl_re ]]; then
                fail "${msg_invalid_zoom/:zoom/${OPTARG}}"
            fi ;;
@@ -217,7 +222,25 @@ escquery_sixel_issupport_get () {
     done
 }
 
-escquery_cellwh_get () {
+escquery_cellwh_get_iterm2 () {
+    esc="$escITERM2cellsize"
+    if [[ -n "$is_stdout_blocked" ]]; then
+        echo -e "$esc" > /dev/tty
+        IFS=";" read -d "\^G" -sra REPLY -t "$timeoutssint" < /dev/tty
+    else
+        IFS=";" read -d "\^G" -sra REPLY -t "$timeoutssint" -p "$esc" >&2
+    fi
+
+    if [[ "${REPLY[2]}" =~ $numfl_re ]]; then
+        itermcellz=$(parse_int ${REPLY[3]})
+        itermcellw=$(($(parse_int ${REPLY[1]##*=})*${itermcellz}))
+        itermcellh=$(($(parse_int ${REPLY[2]})*${itermcellz}))
+
+        printf '%s\n' "${itermcellw}x${itermcellh}"
+    fi
+}
+
+escquery_cellwh_get_xterm () {
     esc="$escXTERMcellsize"
     if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
@@ -228,6 +251,17 @@ escquery_cellwh_get () {
 
     if [[ "${REPLY[1]}" =~ $numint_re ]]; then
         printf '%s\n' "${REPLY[2]}x${REPLY[1]}"
+    fi
+}
+
+escquery_cellwh_get () {
+    wh=$(escquery_cellwh_get_xterm)
+    if [[ -z "$wh" ]]; then
+        wh=$(escquery_cellwh_get_iterm2)
+    fi
+
+    if [[ -n "$wh" ]]; then
+        printf '%s\n' "$wh"
     else
         fail "$msg_undetectable_cell_size"
     fi
