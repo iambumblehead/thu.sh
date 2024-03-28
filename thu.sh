@@ -637,6 +637,10 @@ video_duration_ffmpeg_parse_ss () {
         fi
     done < <(printf '%s\n' "$1")
 
+    if [[ -z "$duration_match" ]]; then
+        fail "video duration could not detected"
+    fi
+
     IFS=" " read -r HOURS MINUTES SECONDS <<< "${duration_match//:/ }"
 
     echo $((10#$HOURS * 3600 + 10#$MINUTES * 60 + 10#$SECONDS))
