@@ -105,7 +105,7 @@ test_thumb_create_from_video () {
 
     assert_matches "video.[[:digit:]]+[x][[:digit:]]+.png$" "$videopath_outimg" \
                    "should use naming pattern for generated file"
-    assert_matches "$([[ -f "$vdeopath_outimg" ]] && echo "true")" "true" \
+    assert_matches "$([[ -f "$videopath_outimg" ]] && echo "true")" "true" \
                    "should generate image file"
 }
 
