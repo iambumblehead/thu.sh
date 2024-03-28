@@ -38,6 +38,10 @@ format_type_SIXEL="SIXEL"
 format_type_KITTY="KITTY"
 format_type_NONE="NONE"
 
+color_RGBA_transp="rgba(0,0,0,0)"
+color_RGBA_black="rgba(0,0,0,1)"
+color_RGBA_cream="rgba(240,240,240,1)"
+
 # escape sequences used to query the terminal for details,
 #   https://www.mankier.com/7/foot-ctlseqs
 #   https://iterm2.com/documentation-escape-codes.html
@@ -116,6 +120,7 @@ print_help () {
     echo "-s configure cache ex, -s true"
     echo "-t timeout, use custom timeout (seconds) w/ shell query functions"
     echo "-v version, show version ($version)"
+    echo "-w wipe, clear kitten icat display image"
     echo "-z zoom, zoom number applied to cell area, ex '1' or '2'"
 }
 
@@ -134,13 +139,14 @@ sessid="sessdefault"
 zoom=
 cells=
 sess=""
+wipe=""
 show_error=
 cache="true"
 timeoutssint=2 # must be integer for darwin/mac variant of 'read'
 sessbuild=""
 defaultw=10000
 version=0.1.0
-while getopts "cer:bkl:jstivz:h" opt; do
+while getopts "cer:bkl:jstivwz:h" opt; do
     case "${opt}" in
         c) cells="true";;
         e) show_error="true";;
@@ -155,6 +161,7 @@ while getopts "cer:bkl:jstivz:h" opt; do
         l) sess="${OPTARG}";;
         s) cache="true";;
         t) timeoutssint="${OPTARG}";;
+        w) wipe="true";;
         z) zoom=$(parse_int "$OPTARG") # remove after decimal for now
            if [[ ! "$zoom" =~ $numfl_re ]]; then
                fail "${msg_invalid_zoom/:zoom/${OPTARG}}"
@@ -361,12 +368,12 @@ file_type_get () {
 
 image_to_sixel_magick () {
     img_path=$1
-    img_wh=$2
+    img_wh=$3
 
     export MAGICK_OCL_DEVICE=true
     if [[ -n "$is_cmd_magick" ]]; then
         magick \
-            -background "rgba(0,0,0,0)" \
+            -background "$color_RGBA_transp" \
             "$img_path" \
             -geometry "$img_wh" \
             sixel:-
@@ -374,7 +381,7 @@ image_to_sixel_magick () {
     elif [[ -n "$is_cmd_convert" ]]; then
         convert \
             -channel rgba \
-            -background "rgba(0,0,0,0)" \
+            -background "$color_RGBA_transp" \
             -geometry "$img_wh" \
             "$img_path" \
             sixel:-
@@ -384,17 +391,36 @@ image_to_sixel_magick () {
     fi
 }
 
-paint () {
+image_to_kittenicat () {
     img_path=$1
-    img_wh=$2
+    img_tl=$2
+    img_wh=$3
+    wh_cell=$5
 
-    case "$3" in
+    # kitten does not provide a 'geometry' option
+    # so image must have been preprocessed to fit desired geometry
+    # or must be exactly placed AND sized
+    # --place `<width>x<height>@<left>x<top>`
+    # --use-window-size `cells_width,cells_height,pixels_width,pixels_height`
+    # https://github.com/kovidgoyal/kitty/discussions/7275
+    if [[ -n "$is_stdout_blocked" ]]; then
+        kitten icat \
+               --place "${img_wh}@${img_tl}" \
+               --align left \
+               --stdin=no \
+               --transfer-mode=stream "$img_path" >/dev/tty </dev/tty
+    else
+        kitten icat --align left "$img_path"
+    fi
+}
+
+# paint $PATH $TL $WH $FORMAT
+paint () {
+    case "$4" in
         "$format_type_SIXEL")
-            image_to_sixel_magick "$img_path" "$img_wh";;
+            image_to_sixel_magick "$@";;
         "$format_type_KITTY")
-            # kitten does not provide a 'geometry' option
-            # so image must have been preprocessed to fit desired geometry
-            kitten icat --align left "$img_path";;
+            image_to_kittenicat "$@";;
         *)
             fail "$msg_unsupported_display, format_type: \"$3\""
     esac
@@ -430,6 +456,13 @@ wh_start_get () {
     fi
 
     echo "$wh"
+}
+
+tl_start_get () {
+    t=$([ -n "$1" ] && echo "$1" || echo "0")
+    l=$([ -n "$2" ] && echo "$2" || echo "0")
+
+    printf '%s\n' "${t}x${l}"
 }
 
 # wh_apply_zoom $WxH $zoom
@@ -573,7 +606,7 @@ wh_pixels_from_cells_get () {
     IFS="x" read -ra wh <<< "$1"
     IFS="x" read -ra whcell <<< "$2"
 
-    echo "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
+    printf '%s\n' "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
@@ -833,8 +866,8 @@ thumb_create_from_font () {
     font_path=$1
     font_wh_max=$2
     font_pointsize="$(wh_pointsize_get "$2")"
-    font_bg_color="rgba(0,0,0,1)"
-    font_fg_color="rgba(240,240,240,1)"
+    font_bg_color="$color_RGBA_black"
+    font_fg_color="$color_RGBA_cream"
     font_preview_text=$(
         join $'\n' \
              "ABCDEFGHIJKLM" \
@@ -924,7 +957,7 @@ thumb_create_from_svg () {
 
     if [[ -n "$is_cmd_magick" ]]; then
         svgimg_error=$(magick \
-            -background "rgba(0,0,0,0)" \
+            -background "$color_RGBA_transp" \
             "$svgimg_path" \
             -geometry "$svgimg_target_wh" \
             "$svgimg_thumb_path" 2>&1)
@@ -932,7 +965,7 @@ thumb_create_from_svg () {
         svgimg_error=$(convert \
             -quiet \
             -channel rgba \
-            -background "rgba(0,0,0,0)" \
+            -background "$color_RGBA_transp" \
             -geometry "$svgimg_target_wh" \
             "$svgimg_path" \
             "$svgimg_thumb_path" 2>&1)
@@ -986,12 +1019,27 @@ sessbuild_get () {
     printf '%s\n' "$sess"
 }
 
+wipe_kittenicat () {
+    if [[ -n "$is_stdout_blocked" ]]; then
+        kitten icat --clear --silent >/dev/tty </dev/tty
+    else
+        kitten icat --clear --silent
+    fi
+}
+
+wipe_get () {
+    if [[ $TERM == "xterm-kitty" ]]; then
+        wipe_kittenicat
+    fi
+}
+
 start () {
     path=$1
     wh_cell=$(wh_cell_get "$sess")
     target_format=$(image_display_format_get "$sess")
     target_wh_max=$(wh_imagemax_get "$sess")
-    target_wh_goal=$(wh_start_get "$2" "$3" "$cells" "$wh_cell")
+    target_wh_goal=$(wh_start_get "$4" "$5" "$cells" "$wh_cell")
+    target_tl_goal=$(tl_start_get "$2" "$3")
 
     [[ $target_wh_max =~ $wxhstr_re ]] &&
         target_wh_goal=$(wh_scaled_get "$target_wh_goal" "$target_wh_max")
@@ -1004,7 +1052,12 @@ start () {
 
     thumb_path=$(thumb_create_from "$path" "$target_wh_goal")
     if [[ -n "$thumb_path" && -f "$thumb_path" ]]; then
-        paint "$thumb_path" "$target_wh_goal" "$target_format"
+        paint \
+            "$thumb_path" \
+            "$target_tl_goal" \
+            "$target_wh_goal" \
+            "$target_format" \
+            "$wh_cell"
     else 
         fail "${msg_could_not_generate_image}"
     fi
@@ -1014,6 +1067,8 @@ start () {
 # do not run main when sourcing the script
 if [[ -n "$sessbuild" ]]; then
     sessbuild_get "$@"
+elif [[ -n "$wipe" ]]; then
+    wipe_get "$@"
 elif [[ "$0" == "${BASH_SOURCE[0]}" ]]; then
     start "$@"
 else
