@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# shellcheck disable=2317
+# shellcheck disable=2317,2154
 #
 # bash_unit test/test_core.sh
 
