@@ -2,6 +2,7 @@
 
  * 0.1.0 _Mar.27.2024_
    * remove [badgesize.io badge,](https://github.com/iambumblehead/thu.sh/pull/52) not working
+   * use [integer timeout value](https://github.com/iambumblehead/thu.sh/pull/53) for darwin/mac read
  * 0.0.9 _Mar.16.2024_
    * simplify [multiline string definition](https://github.com/iambumblehead/thu.sh/pull/48)
  * 0.0.8 _Mar.22.2024_

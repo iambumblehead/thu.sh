@@ -131,7 +131,7 @@ cells=
 sess=""
 show_error=
 cache="true"
-timeoutss=1.2
+timeoutssint=2 # must be integer for darwin/mac variant of 'read'
 sessbuild=""
 defaultw=1000
 version=0.1.0
@@ -149,7 +149,7 @@ while getopts "cer:bkl:jstivz:h" opt; do
         k) sess=$(cat "$cachedir/thu.sh.sess");;
         l) sess="${OPTARG}";;
         s) cache="true";;
-        t) timeoutss="${OPTARG}";;
+        t) timeoutssint="${OPTARG}";;
         z) zoom="${OPTARG%.*}" # remove after decimal for now
            if [[ ! "$zoom" =~ $numfl_re ]]; then
                fail "${msg_invalid_zoom/:zoom/${OPTARG}}"
@@ -221,9 +221,9 @@ escquery_cellwh_get () {
     esc="$escXTERMcellsize"
     if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
-        IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+        IFS=";" read -d t -sra REPLY -t "$timeoutssint" < /dev/tty
     else
-        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+        IFS=";" read -d t -sra REPLY -t "$timeoutssint" -p "$esc" >&2
     fi
 
     if [[ "${REPLY[1]}" =~ $numint_re ]]; then
@@ -242,9 +242,9 @@ escquery_sixel_maxwh_get () {
     esc="$escXTERMsixelmaxwh"
     if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
-        IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" < /dev/tty
+        IFS=";" read -d 'S' -sra REPLY -t "$timeoutssint" < /dev/tty
     else
-        IFS=";" read -d 'S' -sra REPLY -t "$timeoutss" -p "$esc" >&2
+        IFS=";" read -d 'S' -sra REPLY -t "$timeoutssint" -p "$esc" >&2
     fi
 
     if [[ "${REPLY[1]}" =~ $numint_re ]]; then
@@ -494,9 +494,9 @@ wh_term_resolution_get () {
     esc="$escXTERMtermsize"
     if [[ -n "$is_stdout_blocked" ]]; then
         echo -e "$esc" > /dev/tty
-        IFS=";" read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+        IFS=";" read -d t -sra REPLY -t "$timeoutssint" < /dev/tty
     else
-        IFS=";" read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+        IFS=";" read -d t -sra REPLY -t "$timeoutssint" -p "$esc" >&2
     fi
 
     if [[ "${REPLY[1]}" =~ $numint_re ]]; then
@@ -507,9 +507,9 @@ wh_term_resolution_get () {
     esc="$escXTERMtermsizeTMUX"
     if [[ -n "$is_stdout_blocked" ]]; then
         echo -e '\e[14t' > /dev/tty
-        IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" < /dev/tty
+        IFS=$';\t' read -d t -sra REPLY -t "$timeoutssint" < /dev/tty
     else
-        IFS=$';\t' read -d t -sra REPLY -t "$timeoutss" -p "$esc" >&2
+        IFS=$';\t' read -d t -sra REPLY -t "$timeoutssint" -p "$esc" >&2
     fi
 
     if [[ "${REPLY[1]}" =~ $numint_re ]]; then
