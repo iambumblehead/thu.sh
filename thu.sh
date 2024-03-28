@@ -145,7 +145,7 @@ cache="true"
 timeoutssint=2 # must be integer for darwin/mac variant of 'read'
 sessbuild=""
 defaultw=10000
-version=0.1.0
+version=0.1.1
 while getopts "cer:bkl:jstivwz:h" opt; do
     case "${opt}" in
         c) cells="true";;
