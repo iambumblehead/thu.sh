@@ -112,5 +112,5 @@ test_thumb_create_from_video () {
 setup_suite() {
     source ../thu.sh
 
-    cachedir_calibrate
+    cachedir_calibrate "$cachedir" "$cache"
 }
