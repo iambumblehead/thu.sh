@@ -99,6 +99,15 @@ test_thumb_create_from_pdf_magcick () {
                    "should generate image file"
 }
 
+test_thumb_create_from_video () {
+    videopath_inmp4="./asset/test.640x480.mp4"
+    videopath_outimg=$(thumb_create_from_video "$videopath_inmp4" "400x400")
+
+    assert_matches "video.[[:digit:]]+[x][[:digit:]]+.png$" "$videopath_outimg" \
+                   "should use naming pattern for generated file"
+    assert_matches "$([[ -f "$vdeopath_outimg" ]] && echo "true")" "true" \
+                   "should generate image file"
+}
 
 setup_suite() {
     source ../thu.sh
