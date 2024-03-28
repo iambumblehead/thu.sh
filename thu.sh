@@ -553,13 +553,13 @@ wh_term_resolution_get_tmux () {
 }
 
 wh_term_resolution_get () {
-    wh=$(wh_term_resolution_get_xterm)
-    if [[ -z "$wh" ]]; then
-        wh=$(wh_term_resolution_get_tmux)
+    whterm=$(wh_term_resolution_get_xterm)
+    if [[ -z "$whterm" ]]; then
+        whterm=$(wh_term_resolution_get_tmux)
     fi
 
-    if [[ -n "$wh" ]]; then
-        printf '%s\n' "$wh"
+    if [[ -n "$whterm" ]]; then
+        printf '%s\n' "$whterm"
     else
         fail "$msg_unknown_win_size"
     fi
