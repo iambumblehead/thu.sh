@@ -89,6 +89,18 @@ test_zip_move_file_out () {
     assert_matches "$containerurn" "$container"
 }
 
+test_thumb_create_from_pdf_magcick () {
+    pdfpath_inpdf="./asset/test.pdf"
+    pdfpath_outimg=$(thumb_create_from_pdf_magick "$pdfpath_inpdf" "400x400")
+    pdfpath_outimgexists=$([[ -f "$pdfpath_outimg" ]] && echo "true")
+
+    assert_matches "pdf.400x400.jpg$" "$pdfpath_outimg" \
+                   "should use naming pattern for generated file"
+    assert_matches "$pdfpath_outimgexists" "true" \
+                   "should generate and image file"
+}
+
+
 setup_suite() {
     source ../thu.sh
 }
