@@ -116,6 +116,7 @@ print_help () {
     echo "-s configure cache ex, -s true"
     echo "-t timeout, use custom timeout (seconds) w/ shell query functions"
     echo "-v version, show version ($version)"
+    echo "-w wipe, clear kitten icat display image"
     echo "-z zoom, zoom number applied to cell area, ex '1' or '2'"
 }
 
@@ -134,13 +135,14 @@ sessid="sessdefault"
 zoom=
 cells=
 sess=""
+wipe=""
 show_error=
 cache="true"
 timeoutssint=2 # must be integer for darwin/mac variant of 'read'
 sessbuild=""
 defaultw=10000
 version=0.1.0
-while getopts "cer:bkl:jstivz:h" opt; do
+while getopts "cer:bkl:jstivwz:h" opt; do
     case "${opt}" in
         c) cells="true";;
         e) show_error="true";;
@@ -155,6 +157,7 @@ while getopts "cer:bkl:jstivz:h" opt; do
         l) sess="${OPTARG}";;
         s) cache="true";;
         t) timeoutssint="${OPTARG}";;
+        w) wipe="true";;
         z) zoom=$(parse_int "$OPTARG") # remove after decimal for now
            if [[ ! "$zoom" =~ $numfl_re ]]; then
                fail "${msg_invalid_zoom/:zoom/${OPTARG}}"
@@ -388,15 +391,22 @@ image_to_kittenicat () {
     img_path=$1
     img_tl=$2
     img_wh=$3
+    wh_cell=$5
 
     # kitten does not provide a 'geometry' option
     # so image must have been preprocessed to fit desired geometry
     # or must be exactly placed AND sized
     # --place `<width>x<height>@<left>x<top>`
+    # --use-window-size `cells_width,cells_height,pixels_width,pixels_height`
     if [[ -n "$is_stdout_blocked" ]]; then
+        kicat_wh_cells=$(wh_term_columnsrows_get)
+        kicat_wh_pixels=$(wh_pixels_from_cells_get "$kicat_wh_cells" "$wh_cell")
+
         kitten icat \
+               --use-window-size "${kicat_wh_cells/x/,},${kicat_wh_pixels/x/,}" \
                --place "${img_wh}@${img_tl}" \
                --align left \
+               --stdin=no \
                --transfer-mode=stream "$img_path" >/dev/tty </dev/tty
     else
         kitten icat --align left "$img_path"
@@ -595,7 +605,7 @@ wh_pixels_from_cells_get () {
     IFS="x" read -ra wh <<< "$1"
     IFS="x" read -ra whcell <<< "$2"
 
-    echo "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
+    printf '%s\n' "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
@@ -1008,6 +1018,20 @@ sessbuild_get () {
     printf '%s\n' "$sess"
 }
 
+wipe_kittenicat () {
+    if [[ -n "$is_stdout_blocked" ]]; then
+        kitten icat --clear --silent >/dev/tty </dev/tty
+    else
+        kitten icat --clear --silent
+    fi
+}
+
+wipe_get () {
+    if [[ $TERM == "xterm-kitty" ]]; then
+        wipe_kittenicat
+    fi
+}
+
 start () {
     path=$1
     wh_cell=$(wh_cell_get "$sess")
@@ -1027,7 +1051,12 @@ start () {
 
     thumb_path=$(thumb_create_from "$path" "$target_wh_goal")
     if [[ -n "$thumb_path" && -f "$thumb_path" ]]; then
-        paint "$thumb_path" "$target_tl_goal" "$target_wh_goal" "$target_format"
+        paint \
+            "$thumb_path" \
+            "$target_tl_goal" \
+            "$target_wh_goal" \
+            "$target_format" \
+            "$wh_cell"
     else 
         fail "${msg_could_not_generate_image}"
     fi
@@ -1037,6 +1066,8 @@ start () {
 # do not run main when sourcing the script
 if [[ -n "$sessbuild" ]]; then
     sessbuild_get "$@"
+elif [[ -n "$wipe" ]]; then
+    wipe_get "$@"
 elif [[ "$0" == "${BASH_SOURCE[0]}" ]]; then
     start "$@"
 else
