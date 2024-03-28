@@ -232,9 +232,9 @@ escquery_cellwh_get_iterm2 () {
     fi
 
     if [[ "${REPLY[2]}" =~ $numfl_re ]]; then
-        itermcellz=$(parse_int ${REPLY[3]})
-        itermcellw=$(($(parse_int ${REPLY[1]##*=})*${itermcellz}))
-        itermcellh=$(($(parse_int ${REPLY[2]})*${itermcellz}))
+        itermcellz=$(parse_int "${REPLY[3]}")
+        itermcellw=$(($(parse_int "${REPLY[1]##*=}")*${itermcellz}))
+        itermcellh=$(($(parse_int "${REPLY[2]}")*${itermcellz}))
 
         printf '%s\n' "${itermcellw}x${itermcellh}"
     fi
