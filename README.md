@@ -20,17 +20,16 @@ thu.sh /path/to/image.png
 thu.sh /path/to/font.ttf
 thu.sh /path/to/video.mp4
 
-# preview image will be scaled to fit optional width and height params
-thu.sh /path/to/music.flac 800 400
-thu.sh /path/to/image.svg 600 600
+# display image is placed to fit optional top, left, width and height params
+thu.sh /path/to/music.flac $top $left $width $height
+thu.sh /path/to/image.svg 0 0 600 600
 thu.sh /path/to/book.pdf
 thu.sh /path/to/book.epub
 ```
 
 <dl>
   <dt>Which terminal emulators will render images?</dt>
-  <dd>`iTerm2`, `kitty` and `foot` can render images with this script. Sixel support for other terminals is listed here https://www.arewesixelyet.com/</dd>
-  <dd>`xterm` can be configured, see https://github.com/iambumblehead/thu.sh/wiki#with-xterm</dd>
+  <dd>`foot`, `xterm`, `kitty` and `iTerm2` can render images with this script. Sixel support for other terminals is listed here https://www.arewesixelyet.com/</dd>
   <dt>Anything else?</dt>
   <dd>Suggestions and improvements are welcome and appreciated. `thu.sh` may feel "slow" as it presently does not yet cache or reuse preview images it generates.</dd>
 </dl>
