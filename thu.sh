@@ -384,6 +384,19 @@ image_to_sixel_magick () {
     fi
 }
 
+image_to_kittenicat () {
+    img_path=$1
+    img_wh=$2
+
+    # kitten does not provide a 'geometry' option
+    # so image must have been preprocessed to fit desired geometry
+    if [[ -n "$is_stdout_blocked" ]]; then
+        kitten icat --align left --transfer-mode=stream "$img_path" >/dev/tty </dev/tty
+    else
+        kitten icat --align left "$img_path"
+    fi
+}
+
 paint () {
     img_path=$1
     img_wh=$2
@@ -392,9 +405,7 @@ paint () {
         "$format_type_SIXEL")
             image_to_sixel_magick "$img_path" "$img_wh";;
         "$format_type_KITTY")
-            # kitten does not provide a 'geometry' option
-            # so image must have been preprocessed to fit desired geometry
-            kitten icat --align left "$img_path";;
+            image_to_kittenicat "$img_path" "$img_wh";;
         *)
             fail "$msg_unsupported_display, format_type: \"$3\""
     esac
