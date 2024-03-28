@@ -627,6 +627,14 @@ img_wh_get () {
     fi
 }
 
+video_info_ffmpeg () {
+    if [[ -z "$is_cmd_ffmpeg" ]]; then
+        fail "$msg_cmd_not_found_ffmpeg"
+    fi
+    
+    ffmpeg -i "$1" 2>&1
+}
+
 video_duration_ffmpeg_parse_ss () {
     duration_match=""
 
@@ -639,7 +647,12 @@ video_duration_ffmpeg_parse_ss () {
 
     IFS=" " read -r HOURS MINUTES SECONDS <<< "${duration_match//:/ }"
 
-    echo $((10#$HOURS * 3600 + 10#$MINUTES * 60 + 10#$SECONDS))
+    duration_ss=$((10#$HOURS * 3600 + 10#$MINUTES * 60 + 10#$SECONDS))
+    if [[ "$duration_ss" =~ $numint_re ]]; then
+        printf '%s\n' "$duration_ss"
+    else
+        fail "video duration could not be detected: $1" 
+    fi
 }
 
 video_resolution_ffmpeg_parse () {
@@ -749,16 +762,13 @@ thumb_create_from_epub () {
 thumb_create_from_video () {
     vid_path=$1
     vid_wh_max=$2
-    vid_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
+    vid_ffmpeg_output=$(video_info_ffmpeg "$1")
     vid_duration_ss=$(video_duration_ffmpeg_parse_ss "$vid_ffmpeg_output")
     vid_wh_native=$(video_resolution_ffmpeg_parse "$vid_ffmpeg_output")
     vid_wh_scaled=$(wh_scaled_get "$vid_wh_native" "$vid_wh_max")
     vid_frame_ss=$(($vid_duration_ss / 5))
-    vid_thumb_path=$(cachedir_path_get "$cachedir" "video" "w h" ".png")
-
-    if [[ -z "$is_cmd_ffmpeg" ]]; then
-        fail "$msg_cmd_not_found_ffmpeg";
-    fi
+    vid_thumb_path=$(
+        cachedir_path_get "$cachedir" "video" "$vid_wh_scaled" ".png")
 
     ffmpeg \
         -ss "$vid_frame_ss" \
