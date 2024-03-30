@@ -1,10 +1,11 @@
 # changelog
 
  * 0.1.1 _Mar.28.2024_
-   * add [notice; vifm image preview not working](https://github.com/iambumblehead/thu.sh/pull/55)
-   * add [pdf test asset and pdf test](https://github.com/iambumblehead/thu.sh/pull/55)
-   * add [video test asset and video test](https://github.com/iambumblehead/thu.sh/pull/56)
-   * add [iTerm2 detection](https://github.com/iambumblehead/thu.sh/pull/58)
+   * add [notice; vifm image preview not working](https://github.com/iambumblehead/thu.sh/pull/57)
+   * add [pdf test asset and pdf test](https://github.com/iambumblehead/thu.sh/pull/58)
+   * add [video test asset and video test](https://github.com/iambumblehead/thu.sh/pull/58)
+   * add [iTerm2 detection](https://github.com/iambumblehead/thu.sh/pull/60)
+   * add [font test asset and test](https://github.com/iambumblehead/thu.sh/pull/61)
  * 0.1.0 _Mar.27.2024_
    * remove [badgesize.io badge,](https://github.com/iambumblehead/thu.sh/pull/52) not working
    * use [integer timeout value](https://github.com/iambumblehead/thu.sh/pull/53) for darwin/mac read

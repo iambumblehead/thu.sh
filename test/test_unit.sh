@@ -109,6 +109,16 @@ test_thumb_create_from_video () {
                    "should generate image file"
 }
 
+test_thumb_create_from_font () {
+    fontpath_inmp4="./asset/OpenComicFont.ttf"
+    fontpath_outimg=$(thumb_create_from_font "$fontpath_inmp4" "400x400")
+
+    assert_matches "font.[[:digit:]]+[x][[:digit:]]+.png$" "$fontpath_outimg" \
+                   "should use naming pattern for generated file"
+    assert_matches "$([[ -f "$fontpath_outimg" ]] && echo "true")" "true" \
+                   "should generate image file"
+}
+
 setup_suite() {
     source ../thu.sh
 

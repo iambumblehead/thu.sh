@@ -888,7 +888,8 @@ thumb_create_from_font () {
              "nopqrstuvwxyz" \
              "1234567890" \
              "!@$\%(){}[]")
-    font_thumb_path=$(cachedir_path_get "$cachedir" "font" "w h" ".jpg")
+    font_thumb_path=$(
+        cachedir_path_get "$cachedir" "font" "$font_wh_max" ".png")
 
     if [[ -n "$is_cmd_magick" ]]; then
         fontimg_error=$(magick \
