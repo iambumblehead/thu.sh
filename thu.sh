@@ -793,7 +793,8 @@ thumb_create_from_audio () {
     aud_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
     aud_wh_native=$(video_resolution_ffmpeg_parse "$aud_ffmpeg_output")
     aud_wh_scaled=$(wh_scaled_get "$aud_wh_native" "$aud_wh_max")
-    aud_thumb_path=$(cachedir_path_get "$cachedir" "audio" "w h" ".png")
+    aud_thumb_path=$(
+        cachedir_path_get "$cachedir" "audio" "$aud_wh_scaled" ".png")
 
     if [[ -z "$is_cmd_ffmpeg" ]]; then
         fail "$msg_cmd_not_found_ffmpeg"
