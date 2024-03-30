@@ -119,6 +119,17 @@ test_thumb_create_from_font () {
                    "should generate image file"
 }
 
+test_thumb_create_from_audio () {
+    audioname="gutenberg.The-Whale-Catchers.Roger-McGuinn-cover-500x500.mp3"
+    audiopath_inmp4="./asset/$audioname"
+    audiopath_outimg=$(thumb_create_from_audio "$audiopath_inmp4" "400x400")
+
+    assert_matches "audio.[[:digit:]]+[x][[:digit:]]+.png$" "$audiopath_outimg" \
+                   "should use naming pattern for generated file"
+    assert_matches "$([[ -f "$audiopath_outimg" ]] && echo "true")" "true" \
+                   "should generate image file"
+}
+
 setup_suite() {
     source ../thu.sh
 
