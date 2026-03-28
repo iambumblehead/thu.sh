@@ -37,9 +37,6 @@ thu.sh /path/to/book.epub
 
 ----------------------------------------------
 
-> [!WARNING]
-> vifm image preview no longer working https://github.com/vifm/vifm/issues/731#issuecomment-2025267217
-
 **Add sixel image preview** to [vifm file manager.][10] Instructions [at the wiki.][11]
 
 <div align="left">
