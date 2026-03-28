@@ -9,9 +9,9 @@ jobs:
   bash_unit:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@v6
     - uses: AnimMouse/setup-ffmpeg@v1
-    - run: sudo apt-get install -y exiftool
+    - run: sudo apt-get install -y exiftool imagemagick
     - name: Unit testing with bash_unit
       run: |
         bash <(curl -s https://raw.githubusercontent.com/pgrange/bash_unit/master/install.sh)
