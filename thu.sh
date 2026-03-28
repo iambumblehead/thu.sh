@@ -75,6 +75,7 @@ msg_could_not_generate_image="could not generate image"
 timecode_re="([[:digit:]]{2}[:][[:digit:]]{2}[:][[:digit:]]{2})"
 resolution_re="([[:digit:]]{2,8}[x][[:digit:]]{2,8})"
 fullpathattr_re="full-path=['\"]([^'\"]*)['\"]"
+videostream_re="Stream #([[:digit:]][:][[:digit:]][:]) Video:"
 contentattr_re="content=['\"]([^'\"]*)['\"]"
 hrefattr_re="href=['\"]([^'\"]*)['\"]"
 wxhstr_re="^[[:digit:]]+[x][[:digit:]]+$"
@@ -800,8 +801,14 @@ thumb_create_from_audio () {
         fail "$msg_cmd_not_found_ffmpeg"
     fi
 
+    aud_ffprobe_output=$(ffprobe -i "$1" 2>&1)
+    aud_ffprobe_videostream_has=$(regex "$aud_ffprobe_output" "$videostream_re")
+    if [[ -z "$aud_ffprobe_videostream_has" ]]; then
+        fail "thumbnail not found"
+    fi
+
     ffmpeg \
-        -ss "00:00:00" \
+        -ss 0 \
         -i "$aud_path" \
         -frames:v 1 \
         -s "$aud_wh_scaled" \
