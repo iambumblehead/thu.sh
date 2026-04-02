@@ -130,6 +130,23 @@ test_thumb_create_from_audio () {
                    "should generate image file"
 }
 
+test_timestamp_file () {
+    testfile_path="./asset/test.epub"
+    testfile_timestamp=$(timestamp "$testfile_path")
+
+    assert_matches "^[0-9]+$" "$testfile_timestamp"
+    assert "((testfile_timestamp >= 1748525924))"
+    # exact timestamp differs by host; avoid strict equal
+}
+
+test_timestamp_now () {
+    now_timestamp=$(timestamp)
+    end_timestamp=$(timestamp)
+
+    assert_matches "^[0-9]+$" "$now_timestamp"
+    assert "((end_timestamp >= now_timestamp))"
+}
+
 setup_suite() {
     source ../thu.sh
 

@@ -110,6 +110,16 @@ error () { # Send message to stderr, no exit code
     printf '%s\n' "$1" >&2;
 }
 
+
+# return timestamp of file or directory, else current timestamp; ex `1748525924`
+timestamp () {
+    if [[ -d "$1" || -f "$1" ]]; then
+        stat -c %Y "$1"
+    else
+        awk 'BEGIN{srand(); print srand()}'
+    fi
+}
+
 print_help () {
     echo "-c cell, proces width and height as cell columns and lines"
     echo "-e error, show errors normally hidden during image-generation flow"
