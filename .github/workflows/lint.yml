@@ -17,4 +17,4 @@ jobs:
         with:
           ignore_paths: test
         env:
-          SHELLCHECK_OPTS: -e SC2004 -e SC1091
+          SHELLCHECK_OPTS: -e SC1091
