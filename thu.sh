@@ -182,7 +182,7 @@ while getopts "cer:bkl:jstivwz:h" opt; do
         h|*) print_help; exit 0;;
     esac
 done
-shift $((OPTIND - 1))
+shift $(($OPTIND - 1))
 
 is_foot_lte_1_16_2_get () {
     if [[ $TERM == "foot" ]]; then
@@ -252,8 +252,8 @@ escquery_cellwh_get_iterm2 () {
 
     if [[ "${REPLY[2]}" =~ $numfl_re ]]; then
         itermcellz=$(parse_int "${REPLY[3]}")
-        itermcellw=$(($(parse_int "${REPLY[1]##*=}")*itermcellz))
-        itermcellh=$(($(parse_int "${REPLY[2]}")*itermcellz))
+        itermcellw=$(($(parse_int "${REPLY[1]##*=}")*${itermcellz}))
+        itermcellh=$(($(parse_int "${REPLY[2]}")*${itermcellz}))
 
         printf '%s\n' "${itermcellw}x${itermcellh}"
     fi
@@ -483,7 +483,7 @@ wh_apply_zoom () {
     IFS="x" read -ra wh <<< "$1"
     z=$([ -n "$2" ] && echo "$2" || echo "1")
 
-    printf '%s\n' "$((wh[0]*z))x$((wh[1]*z))"
+    printf '%s\n' "$((${wh[0]}*$z))x$((${wh[1]}*$z))"
 }
 
 # if cellwh can be probed from session string,
@@ -524,16 +524,16 @@ wh_imagemax_get () {
 wh_max_get () {
     IFS="x" read -ra wh <<< "$1"
 
-    echo "$((wh[0] > wh[1] ? wh[0] : wh[1]))"
+    echo "$((${wh[0]} > ${wh[1]} ? ${wh[0]} : ${wh[1]}))"
 }
 
 wh_pointsize_get () {
     IFS="x" read -ra wh <<< "$1"
 
-    min=$((wh[0] > wh[1] ? wh[1] : wh[0]))
-    mul=$((wh[0] > wh[1] ? 9 : 10))
+    min=$((${wh[0]} > ${wh[1]} ? ${wh[1]} : ${wh[0]}))
+    mul=$((${wh[0]} > ${wh[1]} ? 9 : 10))
 
-    echo "$((min / mul))"
+    echo "$(($min / $mul))"
 }
 
 wh_scaled_get () {
@@ -552,10 +552,10 @@ wh_scaled_get () {
 
     # multiply and divide by 100 to convert decimal and int
     fin_h=$h_max
-    fin_w=$(((w_bgn * ((fin_h * 100) / h_bgn)) / 100))
+    fin_w=$((($w_bgn * (($fin_h * 100) / $h_bgn)) / 100))
     if [ "$fin_w" -ge "$w_max" ]; then
         fin_w=$w_max
-        fin_h=$(((h_bgn * ((fin_w * 100) / w_bgn)) / 100))
+        fin_h=$((($h_bgn * (($fin_w * 100) / $w_bgn)) / 100))
     fi
 
     echo "${fin_w}x${fin_h}"
@@ -619,7 +619,7 @@ wh_pixels_from_cells_get () {
     IFS="x" read -ra wh <<< "$1"
     IFS="x" read -ra whcell <<< "$2"
 
-    printf '%s\n' "$((wh[0] * whcell[0]))x$((wh[1] * whcell[1]))"
+    printf '%s\n' "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
@@ -779,7 +779,7 @@ thumb_create_from_video () {
     vid_duration_ss=$(video_duration_ffmpeg_parse_ss "$vid_ffmpeg_output")
     vid_wh_native=$(video_resolution_ffmpeg_parse "$vid_ffmpeg_output")
     vid_wh_scaled=$(wh_scaled_get "$vid_wh_native" "$vid_wh_max")
-    vid_frame_ss=$((vid_duration_ss / 5))
+    vid_frame_ss=$(($vid_duration_ss / 5))
     vid_thumb_path=$(
         cachedir_path_get "$cachedir" "video" "$vid_wh_scaled" ".png")
 
