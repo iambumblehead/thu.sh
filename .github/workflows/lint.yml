@@ -16,5 +16,3 @@ jobs:
         uses: ludeeus/action-shellcheck@master
         with:
           ignore_paths: test
-        env:
-          SHELLCHECK_OPTS: -e SC1091
