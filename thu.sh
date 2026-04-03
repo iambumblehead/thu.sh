@@ -552,10 +552,10 @@ wh_scaled_get () {
 
     # multiply and divide by 100 to convert decimal and int
     fin_h=$h_max
-    fin_w=$((($w_bgn * (($fin_h * 100) / $h_bgn)) / 100))
+    fin_w=$(((w_bgn * ((fin_h * 100) / h_bgn)) / 100))
     if [ "$fin_w" -ge "$w_max" ]; then
         fin_w=$w_max
-        fin_h=$((($h_bgn * (($fin_w * 100) / $w_bgn)) / 100))
+        fin_h=$(((h_bgn * ((fin_w * 100) / w_bgn)) / 100))
     fi
 
     echo "${fin_w}x${fin_h}"
