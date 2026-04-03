@@ -396,12 +396,8 @@ image_to_sixel_magick () {
 
     export MAGICK_OCL_DEVICE=true
     if [[ -n "$is_cmd_img2sixel" ]]; then
-        img_pathwh=$(image_path_parse_wh "$img_path")
-        if [[ -n "$img_pathwh" ]]; then
-            img_fitwh=$(wh_fitted_get "$img_pathwh" "$img_targetwh" 1)
-        else
-            img_fitwh="autoxauto"
-        fi
+        img_pathwh=$(img_wh_get "$img_path")
+        img_fitwh=$(wh_fitted_get "$img_pathwh" "$img_targetwh" 1)
         img2sixel \
             --bgcolor="$color_HEX_black" \
             --width="${img_fitwh%%x*}" \
