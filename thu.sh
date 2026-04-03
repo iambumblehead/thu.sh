@@ -241,6 +241,8 @@ escquery_sixel_issupport_get () {
     done
 }
 
+
+
 escquery_cellwh_get_iterm2 () {
     esc="$escITERM2cellsize"
     if [[ -n "$is_stdout_blocked" ]]; then
@@ -252,10 +254,12 @@ escquery_cellwh_get_iterm2 () {
 
     if [[ "${REPLY[2]}" =~ $numfl_re ]]; then
         itermcellz=$(parse_int "${REPLY[3]}")
-        itermcellw=$(($(parse_int "${REPLY[1]##*=}")*${itermcellz}))
-        itermcellh=$(($(parse_int "${REPLY[2]}")*${itermcellz}))
+        itermcellw=$(parse_int "${REPLY[1]##*=}")
+        itermcellh=$(parse_int "${REPLY[2]}")
+        itermcellwz=$((itermcellw * itermcellz))
+        itermcellhz=$((itermcellh * itermcellz))
 
-        printf '%s\n' "${itermcellw}x${itermcellh}"
+        printf '%s\n' "${itermcellwz}x${itermcellhz}"
     fi
 }
 
