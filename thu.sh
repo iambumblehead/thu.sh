@@ -182,7 +182,7 @@ while getopts "cer:bkl:jstivwz:h" opt; do
         h|*) print_help; exit 0;;
     esac
 done
-shift $(($OPTIND - 1))
+shift $((OPTIND - 1))
 
 is_foot_lte_1_16_2_get () {
     if [[ $TERM == "foot" ]]; then
@@ -483,7 +483,7 @@ wh_apply_zoom () {
     IFS="x" read -ra wh <<< "$1"
     z=$([ -n "$2" ] && echo "$2" || echo "1")
 
-    printf '%s\n' "$((${wh[0]}*$z))x$((${wh[1]}*$z))"
+    printf '%s\n' "$((wh[0]*z))x$((wh[1]*z))"
 }
 
 # if cellwh can be probed from session string,

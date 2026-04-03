@@ -23,6 +23,11 @@ test_wh_get_returns_WxH () {
                   "should return \"WxH\" dimensions"
 }
 
+test_wh_apply_zoom_returns_zoom_WxH () {
+    assert_equals "1024x1024" "$(wh_apply_zoom "512x512" 2)" \
+                  "should return \"WxH\" dimensions, zoomed"
+}
+
 test_image_display_format_get () {
     sessstr_KITTY="displayformat=KITTY"
     sessstr_SIXEL="displayformat=SIXEL"
@@ -135,7 +140,7 @@ test_timestamp_file () {
     testfile_timestamp=$(timestamp "$testfile_path")
 
     assert_matches "^[0-9]+$" "$testfile_timestamp"
-    assert "((testfile_timestamp >= 1748525924))"
+    assert "[[ $testfile_timestamp -ge 1748525924 ]]"
     # exact timestamp differs by host; avoid strict equal
 }
 
@@ -144,7 +149,7 @@ test_timestamp_now () {
     end_timestamp=$(timestamp)
 
     assert_matches "^[0-9]+$" "$now_timestamp"
-    assert "((end_timestamp >= now_timestamp))"
+    assert "[[ $end_timestamp -ge $now_timestamp ]]"
 }
 
 setup_suite() {
