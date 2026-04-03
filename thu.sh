@@ -779,7 +779,7 @@ thumb_create_from_video () {
     vid_duration_ss=$(video_duration_ffmpeg_parse_ss "$vid_ffmpeg_output")
     vid_wh_native=$(video_resolution_ffmpeg_parse "$vid_ffmpeg_output")
     vid_wh_scaled=$(wh_scaled_get "$vid_wh_native" "$vid_wh_max")
-    vid_frame_ss=$(($vid_duration_ss / 5))
+    vid_frame_ss=$((vid_duration_ss / 5))
     vid_thumb_path=$(
         cachedir_path_get "$cachedir" "video" "$vid_wh_scaled" ".png")
 
