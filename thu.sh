@@ -22,6 +22,7 @@ is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
 is_cmd_unzip=$(command -v unzip)
+is_cmd_img2sixel=$(command -v img2sixel)
 is_iterm2=$([ "$LC_TERMINAL" == "iTerm2" ] && echo "true")
 is_stdout_blocked=""
 [ ! -t 1 ] &&
@@ -38,6 +39,8 @@ mime_type_PDF="pdf"
 format_type_SIXEL="SIXEL"
 format_type_KITTY="KITTY"
 format_type_NONE="NONE"
+
+color_HEX_black=#000
 
 color_RGBA_transp="rgba(0,0,0,0)"
 color_RGBA_black="rgba(0,0,0,1)"
@@ -385,7 +388,12 @@ image_to_sixel_magick () {
     img_wh=$3
 
     export MAGICK_OCL_DEVICE=true
-    if [[ -n "$is_cmd_magick" ]]; then
+    if [[ -n "$is_cmd_img2sixel" ]]; then
+        img2sixel \
+            --bgcolor="$color_HEX_black" \
+            "$img_path"
+        echo ""
+    elif [[ -n "$is_cmd_magick" ]]; then
         magick \
             -background "$color_RGBA_transp" \
             "$img_path" \
