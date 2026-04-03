@@ -536,7 +536,7 @@ wh_pointsize_get () {
     echo $((min / mul))
 }
 
-wh_scaled_get () {
+wh_fitted_get () {
     IFS="x" read -ra wh_bgn <<< "$1"
     IFS="x" read -ra wh_max <<< "$2"
     w_bgn=${wh_bgn[0]}
@@ -778,7 +778,7 @@ thumb_create_from_video () {
     vid_ffmpeg_output=$(video_info_ffmpeg "$1")
     vid_duration_ss=$(video_duration_ffmpeg_parse_ss "$vid_ffmpeg_output")
     vid_wh_native=$(video_resolution_ffmpeg_parse "$vid_ffmpeg_output")
-    vid_wh_scaled=$(wh_scaled_get "$vid_wh_native" "$vid_wh_max")
+    vid_wh_scaled=$(wh_fitted_get "$vid_wh_native" "$vid_wh_max")
     vid_frame_ss=$((vid_duration_ss / 5))
     vid_thumb_path=$(
         cachedir_path_get "$cachedir" "video" "$vid_wh_scaled" ".png")
@@ -803,7 +803,7 @@ thumb_create_from_audio () {
     aud_wh_max=$2
     aud_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
     aud_wh_native=$(video_resolution_ffmpeg_parse "$aud_ffmpeg_output")
-    aud_wh_scaled=$(wh_scaled_get "$aud_wh_native" "$aud_wh_max")
+    aud_wh_scaled=$(wh_fitted_get "$aud_wh_native" "$aud_wh_max")
     aud_thumb_path=$(
         cachedir_path_get "$cachedir" "audio" "$aud_wh_scaled" ".png")
 
@@ -957,7 +957,7 @@ thumb_create_from_image () {
     oimg_path=$1
     oimg_target_wh=$2
     oimg_wh_native=$(img_wh_get "$oimg_path")
-    oimg_wh_scaled=$(wh_scaled_get "$oimg_wh_native" "$oimg_target_wh")
+    oimg_wh_scaled=$(wh_fitted_get "$oimg_wh_native" "$oimg_target_wh")
     oimg_thumb_path=$(cachedir_path_get "$cachedir" "img" "$2" ".png")
 
     if [[ -n "$is_cmd_magick" ]]; then
@@ -1073,7 +1073,7 @@ start () {
     target_tl_goal=$(tl_start_get "$2" "$3")
 
     [[ $target_wh_max =~ $wxhstr_re ]] &&
-        target_wh_goal=$(wh_scaled_get "$target_wh_goal" "$target_wh_max")
+        target_wh_goal=$(wh_fitted_get "$target_wh_goal" "$target_wh_max")
 
     if [[ -n $(is_foot_lte_1_16_2_get) && -z "$zoom" && -z "$sessbuild" ]]; then
         is_foot_lte_1_16_2_message_get
