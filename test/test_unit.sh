@@ -172,6 +172,7 @@ test_timestamp_now () {
 }
 
 setup_suite() {
+    # shellcheck disable=SC1091
     source ../thu.sh
 
     cachedir_calibrate "$cachedir" "$cache"
