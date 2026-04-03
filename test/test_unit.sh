@@ -35,6 +35,13 @@ test_wh_max_get_returns_max () {
                   "should return \"1024\" max dimension"    
 }
 
+test_wh_pointsize_get_returns_pointsize () {
+    assert_equals "51" "$(wh_pointsize_get "512x1024")" \
+                  "should return \"51\" pointsize"
+    assert_equals "56" "$(wh_pointsize_get "1024x512")" \
+                  "should return \"56\" pointsize"
+}
+
 test_image_display_format_get () {
     sessstr_KITTY="displayformat=KITTY"
     sessstr_SIXEL="displayformat=SIXEL"

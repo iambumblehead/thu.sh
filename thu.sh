@@ -530,10 +530,10 @@ wh_max_get () {
 wh_pointsize_get () {
     IFS="x" read -ra wh <<< "$1"
 
-    min=$((${wh[0]} > ${wh[1]} ? ${wh[1]} : ${wh[0]}))
-    mul=$((${wh[0]} > ${wh[1]} ? 9 : 10))
+    min=$((wh[0] > wh[1] ? wh[1] : wh[0]))
+    mul=$((wh[0] > wh[1] ? 9 : 10))
 
-    echo "$(($min / $mul))"
+    echo $((min / mul))
 }
 
 wh_scaled_get () {
