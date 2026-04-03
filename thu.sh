@@ -362,6 +362,7 @@ cachedir_path_get () {
 
 file_type_get () {
     mime=$(file -b --mime-type "$1")
+    extn="${1##*.}"
 
     # font, pdf, video, audio, epub
     if [[ $mime =~ ^"image/svg" ]]; then
@@ -376,10 +377,10 @@ file_type_get () {
         echo "$mime_type_PDF"
     elif [[ $mime =~ (ttf|truetype|opentype|woff|woff2|sfnt)$ ]]; then
         echo "$mime_type_FONT"
-    elif [[ $mime =~ ^"application/epub" ]]; then
+    elif [[ $mime =~ ^"application/epub" ]] || [[ "$extn" = "epub" ]]; then
         echo "$mime_type_EPUB"
     else
-        fail "$msg_unsupported_mime"
+        fail "$msg_unsupported_mime: $mime"
     fi
 }
 
