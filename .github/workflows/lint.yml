@@ -14,5 +14,3 @@ jobs:
       - uses: actions/checkout@v6
       - name: run shellcheck
         uses: ludeeus/action-shellcheck@master
-        with:
-          ignore_paths: test

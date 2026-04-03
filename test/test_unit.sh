@@ -60,7 +60,7 @@ test_image_display_format_get () {
                   "should return displayformat from sess string, NONE"
 }
 
-test_zip_read_file () {
+test_zip_read_file_fail () {
     filepath_not_exist="./path/not/exist.xml"
     zippath_not_exist="./path/not/exist.zip"
 
