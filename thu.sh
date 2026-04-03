@@ -391,6 +391,8 @@ image_to_sixel_magick () {
     if [[ -n "$is_cmd_img2sixel" ]]; then
         img2sixel \
             --bgcolor="$color_HEX_black" \
+            --width="${img_wh%%x*}" \
+            --height="${img_wh##*x}" \
             "$img_path"
         echo ""
     elif [[ -n "$is_cmd_magick" ]]; then
