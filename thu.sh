@@ -22,6 +22,7 @@ is_cmd_exiftool=$(command -v exiftool)
 is_cmd_identify=$(command -v identify)
 is_cmd_ffmpeg=$(command -v ffmpeg)
 is_cmd_unzip=$(command -v unzip)
+is_cmd_img2sixel=$(command -v img2sixel)
 is_iterm2=$([ "$LC_TERMINAL" == "iTerm2" ] && echo "true")
 is_stdout_blocked=""
 [ ! -t 1 ] &&
@@ -38,6 +39,8 @@ mime_type_PDF="pdf"
 format_type_SIXEL="SIXEL"
 format_type_KITTY="KITTY"
 format_type_NONE="NONE"
+
+color_HEX_black=#000
 
 color_RGBA_transp="rgba(0,0,0,0)"
 color_RGBA_black="rgba(0,0,0,1)"
@@ -359,6 +362,7 @@ cachedir_path_get () {
 
 file_type_get () {
     mime=$(file -b --mime-type "$1")
+    extn="${1##*.}"
 
     # font, pdf, video, audio, epub
     if [[ $mime =~ ^"image/svg" ]]; then
@@ -373,30 +377,49 @@ file_type_get () {
         echo "$mime_type_PDF"
     elif [[ $mime =~ (ttf|truetype|opentype|woff|woff2|sfnt)$ ]]; then
         echo "$mime_type_FONT"
-    elif [[ $mime =~ ^"application/epub" ]]; then
+    elif [[ $mime =~ ^"application/epub" ]] || [[ "$extn" = "epub" ]]; then
         echo "$mime_type_EPUB"
     else
-        fail "$msg_unsupported_mime"
+        fail "$msg_unsupported_mime: $mime"
     fi
+}
+
+# strip extension, then return resolution from end of filename
+# TODO update regexp to strictly match end of string only
+image_path_parse_wh () {
+    regex "${1%.*}" "$resolution_re"
 }
 
 image_to_sixel_magick () {
     img_path=$1
-    img_wh=$3
+    img_targetwh=$3
 
     export MAGICK_OCL_DEVICE=true
-    if [[ -n "$is_cmd_magick" ]]; then
+    if [[ -n "$is_cmd_img2sixel" ]]; then
+        img_pathwh=$(image_path_parse_wh "$img_path")
+        if [[ -n "$img_pathwh" ]]; then
+            img_fitwh=$(wh_fitted_get "$img_pathwh" "$img_targetwh" 1)
+        else
+            img_fitwh="autoxauto"
+        fi
+        img2sixel \
+            --bgcolor="$color_HEX_black" \
+            --width="${img_fitwh%%x*}" \
+            --height="${img_fitwh##*x}" \
+            "$img_path"
+        echo ""
+    elif [[ -n "$is_cmd_magick" ]]; then
         magick \
             -background "$color_RGBA_transp" \
             "$img_path" \
-            -geometry "$img_wh" \
+            -geometry "$img_targetwh" \
             sixel:-
         echo ""
     elif [[ -n "$is_cmd_convert" ]]; then
         convert \
             -channel rgba \
             -background "$color_RGBA_transp" \
-            -geometry "$img_wh" \
+            -geometry "$img_targetwh" \
             "$img_path" \
             sixel:-
         echo ""
@@ -544,11 +567,14 @@ wh_fitted_get () {
     w_max=${wh_max[0]}
     h_bgn=${wh_bgn[1]}
     h_max=${wh_max[1]}
+    can_upscale=${3:-0}
 
-    # if image is smaller, return native wh
     if [[ "$w_max" -gt "$w_bgn" ]] && [[ "$h_max" -gt "$h_bgn" ]]; then
-        echo "${w_bgn}x${h_bgn}"
-        exit 0
+        # if image is smaller, return native wh
+        if [[ "$can_upscale" -eq 0 ]]; then
+            echo "${w_bgn}x${h_bgn}"
+            exit 0
+        fi
     fi
 
     # multiply and divide by 100 to convert decimal and int
