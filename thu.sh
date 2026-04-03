@@ -524,7 +524,7 @@ wh_imagemax_get () {
 wh_max_get () {
     IFS="x" read -ra wh <<< "$1"
 
-    echo "$((${wh[0]} > ${wh[1]} ? ${wh[0]} : ${wh[1]}))"
+    echo $((wh[0] > wh[1] ? wh[0] : wh[1]))
 }
 
 wh_pointsize_get () {

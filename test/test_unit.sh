@@ -28,6 +28,13 @@ test_wh_apply_zoom_returns_zoom_WxH () {
                   "should return \"WxH\" dimensions, zoomed"
 }
 
+test_wh_max_get_returns_max () {
+    assert_equals "1024" "$(wh_max_get "512x1024")" \
+                  "should return \"1024\" max dimension"
+    assert_equals "1024" "$(wh_max_get "1024x512")" \
+                  "should return \"1024\" max dimension"    
+}
+
 test_image_display_format_get () {
     sessstr_KITTY="displayformat=KITTY"
     sessstr_SIXEL="displayformat=SIXEL"
