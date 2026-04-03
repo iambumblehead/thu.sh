@@ -110,7 +110,6 @@ error () { # Send message to stderr, no exit code
     printf '%s\n' "$1" >&2;
 }
 
-
 # return timestamp of file or directory, else current timestamp; ex `1748525924`
 timestamp () {
     if [[ -d "$1" || -f "$1" ]]; then
@@ -240,8 +239,6 @@ escquery_sixel_issupport_get () {
         fi
     done
 }
-
-
 
 escquery_cellwh_get_iterm2 () {
     esc="$escITERM2cellsize"
