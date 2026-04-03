@@ -3,9 +3,14 @@
 #
 # bash_unit test/test_core.sh
 
-test_wh_scaled_get_scales_down_larger_dimensions () {
-    assert_equals "480x480" "$(wh_scaled_get "1000x1000" "640x480")" \
+test_wh_fitted_get_scales_down_larger_dimensions () {
+    assert_equals "480x480" "$(wh_fitted_get "1000x1000" "640x480")" \
                   "should scale down larger dimensions"
+}
+
+test_wh_pixels_from_cells_get () {
+    assert_equals "1280x1440" "$(wh_pixels_from_cells_get "640x480" "2x3")" \
+                  "should return wh pixels from cells"
 }
 
 test_wh_identify_get_returns_WxH () {
@@ -21,6 +26,25 @@ test_wh_exiftool_get_returns_WxH () {
 test_wh_get_returns_WxH () {
     assert_equals "512x512" "$(img_wh_get ./Guix_logo.png)" \
                   "should return \"WxH\" dimensions"
+}
+
+test_wh_apply_zoom_returns_zoom_WxH () {
+    assert_equals "1024x1024" "$(wh_apply_zoom "512x512" 2)" \
+                  "should return \"WxH\" dimensions, zoomed"
+}
+
+test_wh_max_get_returns_max () {
+    assert_equals "1024" "$(wh_max_get "512x1024")" \
+                  "should return \"1024\" max dimension"
+    assert_equals "1024" "$(wh_max_get "1024x512")" \
+                  "should return \"1024\" max dimension"    
+}
+
+test_wh_pointsize_get_returns_pointsize () {
+    assert_equals "51" "$(wh_pointsize_get "512x1024")" \
+                  "should return \"51\" pointsize"
+    assert_equals "56" "$(wh_pointsize_get "1024x512")" \
+                  "should return \"56\" pointsize"
 }
 
 test_image_display_format_get () {
@@ -135,7 +159,7 @@ test_timestamp_file () {
     testfile_timestamp=$(timestamp "$testfile_path")
 
     assert_matches "^[0-9]+$" "$testfile_timestamp"
-    assert "((testfile_timestamp >= 1748525924))"
+    assert "[[ $testfile_timestamp -ge 1748525924 ]]"
     # exact timestamp differs by host; avoid strict equal
 }
 
@@ -144,7 +168,7 @@ test_timestamp_now () {
     end_timestamp=$(timestamp)
 
     assert_matches "^[0-9]+$" "$now_timestamp"
-    assert "((end_timestamp >= now_timestamp))"
+    assert "[[ $end_timestamp -ge $now_timestamp ]]"
 }
 
 setup_suite() {

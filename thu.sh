@@ -110,7 +110,6 @@ error () { # Send message to stderr, no exit code
     printf '%s\n' "$1" >&2;
 }
 
-
 # return timestamp of file or directory, else current timestamp; ex `1748525924`
 timestamp () {
     if [[ -d "$1" || -f "$1" ]]; then
@@ -182,7 +181,7 @@ while getopts "cer:bkl:jstivwz:h" opt; do
         h|*) print_help; exit 0;;
     esac
 done
-shift $(($OPTIND - 1))
+shift $((OPTIND - 1))
 
 is_foot_lte_1_16_2_get () {
     if [[ $TERM == "foot" ]]; then
@@ -252,10 +251,12 @@ escquery_cellwh_get_iterm2 () {
 
     if [[ "${REPLY[2]}" =~ $numfl_re ]]; then
         itermcellz=$(parse_int "${REPLY[3]}")
-        itermcellw=$(($(parse_int "${REPLY[1]##*=}")*${itermcellz}))
-        itermcellh=$(($(parse_int "${REPLY[2]}")*${itermcellz}))
+        itermcellw=$(parse_int "${REPLY[1]##*=}")
+        itermcellh=$(parse_int "${REPLY[2]}")
+        itermcellwz=$((itermcellw * itermcellz))
+        itermcellhz=$((itermcellh * itermcellz))
 
-        printf '%s\n' "${itermcellw}x${itermcellh}"
+        printf '%s\n' "${itermcellwz}x${itermcellhz}"
     fi
 }
 
@@ -483,7 +484,7 @@ wh_apply_zoom () {
     IFS="x" read -ra wh <<< "$1"
     z=$([ -n "$2" ] && echo "$2" || echo "1")
 
-    printf '%s\n' "$((${wh[0]}*$z))x$((${wh[1]}*$z))"
+    printf '%s\n' "$((wh[0]*z))x$((wh[1]*z))"
 }
 
 # if cellwh can be probed from session string,
@@ -524,19 +525,19 @@ wh_imagemax_get () {
 wh_max_get () {
     IFS="x" read -ra wh <<< "$1"
 
-    echo "$((${wh[0]} > ${wh[1]} ? ${wh[0]} : ${wh[1]}))"
+    echo $((wh[0] > wh[1] ? wh[0] : wh[1]))
 }
 
 wh_pointsize_get () {
     IFS="x" read -ra wh <<< "$1"
 
-    min=$((${wh[0]} > ${wh[1]} ? ${wh[1]} : ${wh[0]}))
-    mul=$((${wh[0]} > ${wh[1]} ? 9 : 10))
+    min=$((wh[0] > wh[1] ? wh[1] : wh[0]))
+    mul=$((wh[0] > wh[1] ? 9 : 10))
 
-    echo "$(($min / $mul))"
+    echo $((min / mul))
 }
 
-wh_scaled_get () {
+wh_fitted_get () {
     IFS="x" read -ra wh_bgn <<< "$1"
     IFS="x" read -ra wh_max <<< "$2"
     w_bgn=${wh_bgn[0]}
@@ -552,10 +553,10 @@ wh_scaled_get () {
 
     # multiply and divide by 100 to convert decimal and int
     fin_h=$h_max
-    fin_w=$((($w_bgn * (($fin_h * 100) / $h_bgn)) / 100))
+    fin_w=$(((w_bgn * ((fin_h * 100) / h_bgn)) / 100))
     if [ "$fin_w" -ge "$w_max" ]; then
         fin_w=$w_max
-        fin_h=$((($h_bgn * (($fin_w * 100) / $w_bgn)) / 100))
+        fin_h=$(((h_bgn * ((fin_w * 100) / w_bgn)) / 100))
     fi
 
     echo "${fin_w}x${fin_h}"
@@ -619,7 +620,7 @@ wh_pixels_from_cells_get () {
     IFS="x" read -ra wh <<< "$1"
     IFS="x" read -ra whcell <<< "$2"
 
-    printf '%s\n' "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
+    printf '%s\n' "$((wh[0] * whcell[0]))x$((wh[1] * whcell[1]))"
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
@@ -778,8 +779,8 @@ thumb_create_from_video () {
     vid_ffmpeg_output=$(video_info_ffmpeg "$1")
     vid_duration_ss=$(video_duration_ffmpeg_parse_ss "$vid_ffmpeg_output")
     vid_wh_native=$(video_resolution_ffmpeg_parse "$vid_ffmpeg_output")
-    vid_wh_scaled=$(wh_scaled_get "$vid_wh_native" "$vid_wh_max")
-    vid_frame_ss=$(($vid_duration_ss / 5))
+    vid_wh_scaled=$(wh_fitted_get "$vid_wh_native" "$vid_wh_max")
+    vid_frame_ss=$((vid_duration_ss / 5))
     vid_thumb_path=$(
         cachedir_path_get "$cachedir" "video" "$vid_wh_scaled" ".png")
 
@@ -803,7 +804,7 @@ thumb_create_from_audio () {
     aud_wh_max=$2
     aud_ffmpeg_output=$(ffmpeg -i "$1" 2>&1)
     aud_wh_native=$(video_resolution_ffmpeg_parse "$aud_ffmpeg_output")
-    aud_wh_scaled=$(wh_scaled_get "$aud_wh_native" "$aud_wh_max")
+    aud_wh_scaled=$(wh_fitted_get "$aud_wh_native" "$aud_wh_max")
     aud_thumb_path=$(
         cachedir_path_get "$cachedir" "audio" "$aud_wh_scaled" ".png")
 
@@ -957,7 +958,7 @@ thumb_create_from_image () {
     oimg_path=$1
     oimg_target_wh=$2
     oimg_wh_native=$(img_wh_get "$oimg_path")
-    oimg_wh_scaled=$(wh_scaled_get "$oimg_wh_native" "$oimg_target_wh")
+    oimg_wh_scaled=$(wh_fitted_get "$oimg_wh_native" "$oimg_target_wh")
     oimg_thumb_path=$(cachedir_path_get "$cachedir" "img" "$2" ".png")
 
     if [[ -n "$is_cmd_magick" ]]; then
@@ -1073,7 +1074,7 @@ start () {
     target_tl_goal=$(tl_start_get "$2" "$3")
 
     [[ $target_wh_max =~ $wxhstr_re ]] &&
-        target_wh_goal=$(wh_scaled_get "$target_wh_goal" "$target_wh_max")
+        target_wh_goal=$(wh_fitted_get "$target_wh_goal" "$target_wh_max")
 
     if [[ -n $(is_foot_lte_1_16_2_get) && -z "$zoom" && -z "$sessbuild" ]]; then
         is_foot_lte_1_16_2_message_get
