@@ -8,6 +8,11 @@ test_wh_scaled_get_scales_down_larger_dimensions () {
                   "should scale down larger dimensions"
 }
 
+test_wh_pixels_from_cells_get () {
+    assert_equals "1280x1440" "$(wh_pixels_from_cells_get "640x480" "2x3")" \
+                  "should return wh pixels from cells"
+}
+
 test_wh_identify_get_returns_WxH () {
     assert_equals "512x512" "$(img_wh_identify_get ./Guix_logo.png)" \
                   "should return \"WxH\" dimensions"

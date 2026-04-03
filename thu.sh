@@ -619,7 +619,7 @@ wh_pixels_from_cells_get () {
     IFS="x" read -ra wh <<< "$1"
     IFS="x" read -ra whcell <<< "$2"
 
-    printf '%s\n' "$((${wh[0]} * ${whcell[0]}))x$((${wh[1]} * ${whcell[1]}))"
+    printf '%s\n' "$((wh[0] * whcell[0]))x$((wh[1] * whcell[1]))"
 }
 
 img_wh_exiftool_get () {  # shellcheck disable=SC2016
