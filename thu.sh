@@ -170,7 +170,7 @@ while getopts "cer:bkl:jstivwz:h" opt; do
         i) sessid="${OPTARG}";;
         b) is_stdout_blocked="true";;
         j) sessbuild="true";;
-        k) sess=$(cat "$cachedir/thu.sh.sess");;
+        k) sess=$(cat "$cachedir/thu.sh.$TERM.sess");;
         l) sess="${OPTARG}";;
         s) cache="true";;
         t) timeoutssint="${OPTARG}";;
@@ -283,6 +283,14 @@ image_display_format_get () {
     else
         printf '%s\n' "$format_type_NONE"
     fi
+}
+
+image_display_format_assert_supported () {
+    if [[ "$1" = "$format_type_NONE" ]]; then
+        fail "$msg_unsupported_display"
+    fi
+
+    printf '%s\n' "$1"
 }
 
 zip_read_file () {
@@ -1013,20 +1021,21 @@ thumb_create_from () {
     esac
 }
 
-sessbuild_get () {
-    sess=$(
-        join ',' \
-             "thu.sh=v$version" \
-             "sess=$sessid" \
-             "displayformat=$(image_display_format_get)" \
-             "sixelmaxwh=$(wh_sixelmax_get)" \
-             "cellwh=$(wh_cell_get)")
+sessbuild_create () {
+    join ',' \
+         "thu.sh=v$version" \
+         "sess=$sessid" \
+         "displayformat=$(image_display_format_get)" \
+         "sixelmaxwh=$(wh_sixelmax_get)" \
+         "cellwh=$(wh_cell_get)"
+}
 
+sessbuild_persist () {
     cachedir_calibrate "$cachedir" "$cache"
 
     # write session to file
-    printf '%s\n' "$sess" > "$cachedir/thu.sh.sess"
-    printf '%s\n' "$sess"
+    printf '%s\n' "$1" > "$cachedir/thu.sh.$TERM.sess"
+    printf '%s\n' "$1"
 }
 
 wipe_kittenicat () {
@@ -1047,6 +1056,8 @@ start () {
     path=$1
     wh_cell=$(wh_cell_get "$sess")
     target_format=$(image_display_format_get "$sess")
+    target_format_supported=$(
+        image_display_format_assert_supported "$target_format")
     target_wh_max=$(wh_imagemax_get "$sess")
     target_wh_goal=$(wh_start_get "$4" "$5" "$cells" "$wh_cell")
     target_tl_goal=$(tl_start_get "$2" "$3")
@@ -1062,7 +1073,7 @@ start () {
             "$thumb_path" \
             "$target_tl_goal" \
             "$target_wh_goal" \
-            "$target_format" \
+            "$target_format_supported" \
             "$wh_cell"
     else 
         fail "${msg_could_not_generate_image}"
@@ -1072,7 +1083,7 @@ start () {
 # test: thu.sh -ckz 3 ./Guix_logo.svg
 # do not run main when sourcing the script
 if [[ -n "$sessbuild" ]]; then
-    sessbuild_get "$@"
+    sessbuild_persist "$(sessbuild_create "$@")"
 elif [[ -n "$wipe" ]]; then
     wipe_get "$@"
 elif [[ "$0" == "${BASH_SOURCE[0]}" ]]; then

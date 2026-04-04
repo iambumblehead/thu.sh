@@ -7,6 +7,7 @@
    * resolve [lint warnings](https://github.com/iambumblehead/thu.sh/pull/71) and [lint test files](https://github.com/iambumblehead/thu.sh/pull/72)
    * use img2sixel to [render final image,](https://github.com/iambumblehead/thu.sh/pull/73) if it exists
    * remove warning for [older versions of foot](https://github.com/iambumblehead/thu.sh/pull/76)
+   * fail message [when display un-supported](https://github.com/iambumblehead/thu.sh/pull/77)
  * 0.1.1 _Mar.28.2024_
    * add [notice; vifm image preview not working](https://github.com/iambumblehead/thu.sh/pull/57)
    * add [pdf test asset and pdf test](https://github.com/iambumblehead/thu.sh/pull/58)

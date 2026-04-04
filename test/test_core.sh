@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=2317,2154
 #
 # bash_unit test/test_core.sh
 
@@ -22,4 +23,23 @@ test_asset_latest_version_number_used () {
 
     assert_equals  "$version_changelog" "$(../thu.sh -v)" \
                    "should use same version, script -v and changelog"    
+}
+
+test_asset_latest_fail_display_unsupported () {
+    sess=$(
+        join ',' \
+             "thu.sh=v$(../thu.sh -v)" \
+             "sess=sessdefault" \
+             "displayformat=$format_type_NONE" \
+             "sixelmaxwh=0x0" \
+             "cellwh=0x0")
+
+    assert_matches "$msg_unsupported_display" \
+                   "$(start -l "$sess" ./asset/test.640x480.mp4 2>&1)" \
+                   "should fail un-supported display"
+}
+
+setup_suite() {
+    # shellcheck disable=SC1091
+    source ../thu.sh
 }
