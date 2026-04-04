@@ -170,7 +170,7 @@ while getopts "cer:bkl:jstivwz:h" opt; do
         i) sessid="${OPTARG}";;
         b) is_stdout_blocked="true";;
         j) sessbuild="true";;
-        k) sess=$(cat "$cachedir/thu.sh.sess");;
+        k) sess=$(cat "$cachedir/thu.sh.$TERM.sess");;
         l) sess="${OPTARG}";;
         s) cache="true";;
         t) timeoutssint="${OPTARG}";;
@@ -1025,7 +1025,7 @@ sessbuild_get () {
     cachedir_calibrate "$cachedir" "$cache"
 
     # write session to file
-    printf '%s\n' "$sess" > "$cachedir/thu.sh.sess"
+    printf '%s\n' "$sess" > "$cachedir/thu.sh.$TERM.sess"
     printf '%s\n' "$sess"
 }
 
@@ -1050,6 +1050,10 @@ start () {
     target_wh_max=$(wh_imagemax_get "$sess")
     target_wh_goal=$(wh_start_get "$4" "$5" "$cells" "$wh_cell")
     target_tl_goal=$(tl_start_get "$2" "$3")
+
+    if [[ "$target_format" = "NONE" ]]; then
+        fail "$msg_unsupported_display"
+    fi
 
     [[ $target_wh_max =~ $wxhstr_re ]] &&
         target_wh_goal=$(wh_fitted_get "$target_wh_goal" "$target_wh_max")
