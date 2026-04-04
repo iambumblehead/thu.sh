@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=2317,2154
 #
 # bash_unit test/test_core.sh
 
@@ -34,7 +35,7 @@ test_asset_latest_fail_display_unsupported () {
              "cellwh=0x0")
 
     assert_matches "$msg_unsupported_display" \
-                   "$(start ./asset/test.640x480.mp4 2>&1)" \
+                   "$(start -l "$sess" ./asset/test.640x480.mp4 2>&1)" \
                    "should fail un-supported display"
 }
 
