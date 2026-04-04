@@ -84,7 +84,6 @@ hrefattr_re="href=['\"]([^'\"]*)['\"]"
 wxhstr_re="^[[:digit:]]+[x][[:digit:]]+$"
 numint_re="^[[:digit:]]+$"
 numfl_re="^[-+]?[[:digit:]]+\.?[[:digit:]]*$"
-version_re="([[:digit:]]+[\.][[:digit:]]+[\.][[:digit:]]+)"
 sesscellwh_re="cellwh=([[:digit:]]+[x][[:digit:]]+)"
 sesssixelmaxwh_re="sixelmaxwh=([[:digit:]]+[x][[:digit:]]+)"
 sessdisplayformat_re="displayformat=(SIXEL|KITTY|NONE)"
@@ -185,43 +184,6 @@ while getopts "cer:bkl:jstivwz:h" opt; do
     esac
 done
 shift $((OPTIND - 1))
-
-is_foot_lte_1_16_2_get () {
-    if [[ $TERM == "foot" ]]; then
-        foot_details=$(foot --version)
-        foot_version=$(regex "$foot_details" "$version_re")
-
-        if [[ -n "$foot_version" ]]; then
-            IFS="." read -ra semver <<< "$foot_version"
-            major="${semver[0]}"
-            minor="${semver[1]}"
-            patch="${semver[2]}"
-
-            if [[ "$major" -lt 1 ]]; then
-                echo "true"
-            elif [[ "$major" -eq 1 ]]; then
-                if [[ "$minor" -lt 16 ]]; then
-                    echo "true"
-                elif [[ "$minor" -eq 16 ]]; then
-                    if [[ "$patch" -le 2 ]]; then
-                        echo "true"
-                    fi
-                fi
-            fi
-        fi
-    fi
-}
-
-is_foot_lte_1_16_2_message_get () {
-    join $'\n' \
-         "WARNING: foot <= v1.16.2 returns incorrect scaled-window values:" \
-         "https://codeberg.org/dnkl/foot/issues/1643" \
-         "" \
-         "To supress this message, define zoom scale using \"-z \$SCALE\"." \
-         "The value of \$SCALE will correspond to the window scale used." \
-         "  If no window scaling, use \"-z 1\"." \
-         "  If a 3x window scaling is used, use \"-z 3\"."
-}
 
 # thank you @topcat001
 # https://github.com/orgs/tmux/discussions/3565#discussioncomment-8713254
@@ -1091,10 +1053,6 @@ start () {
 
     [[ $target_wh_max =~ $wxhstr_re ]] &&
         target_wh_goal=$(wh_fitted_get "$target_wh_goal" "$target_wh_max")
-
-    if [[ -n $(is_foot_lte_1_16_2_get) && -z "$zoom" && -z "$sessbuild" ]]; then
-        is_foot_lte_1_16_2_message_get
-    fi
 
     cachedir_calibrate "$cachedir" "$cache"
 
