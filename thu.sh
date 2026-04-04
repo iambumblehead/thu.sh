@@ -159,7 +159,7 @@ cache="true"
 timeoutssint=2 # must be integer for darwin/mac variant of 'read'
 sessbuild=""
 defaultw=10000
-version=0.1.1
+version=0.1.2
 while getopts "cer:bkl:jstivwz:h" opt; do
     case "${opt}" in
         c) cells="true";;
@@ -382,12 +382,6 @@ file_type_get () {
     else
         fail "$msg_unsupported_mime: $mime"
     fi
-}
-
-# strip extension, then return resolution from end of filename
-# TODO update regexp to strictly match end of string only
-image_path_parse_wh () {
-    regex "${1%.*}" "$resolution_re"
 }
 
 image_to_sixel_magick () {
