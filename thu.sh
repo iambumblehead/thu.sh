@@ -384,12 +384,6 @@ file_type_get () {
     fi
 }
 
-# strip extension, then return resolution from end of filename
-# TODO update regexp to strictly match end of string only
-image_path_parse_wh () {
-    regex "${1%.*}" "$resolution_re"
-}
-
 image_to_sixel_magick () {
     img_path=$1
     img_targetwh=$3
