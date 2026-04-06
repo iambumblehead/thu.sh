@@ -29,7 +29,7 @@ is_stdout_blocked=""
     is_stdout_blocked="true"
 
 mime_type_SVG="svg"
-mime_type_IMAGE="imgage"
+mime_type_IMAGE="image"
 mime_type_VIDEO="video"
 mime_type_AUDIO="audio"
 mime_type_FONT="font"

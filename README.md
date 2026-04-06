@@ -7,7 +7,7 @@
 </p>
 
 **thu.sh renders images from audio, font, video, pdf, epub, svg** and other files --supporting both kitty and sixel formats. It detects available commands from the system for a small dependency tree,
- * `magick` sixel or `kitten icat` display,
+ * `magick` or `img2sixel` sixel or `kitten icat` display,
  * `mutool`, `pdftoppm` or `magick` pdf,
  * `ffmpeg` video audio,
  * `magick` font,
